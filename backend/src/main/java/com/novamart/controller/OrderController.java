@@ -59,6 +59,12 @@ public class OrderController {
         return ResponseEntity.ok(orderService.addCartItem(userId, request));
     }
 
+    @PostMapping("/cart/checkout")
+    public ResponseEntity<OrderResponse> checkoutCart(Authentication authentication) {
+        Long userId = getUserId(authentication);
+        return ResponseEntity.ok(orderService.checkoutCart(userId));
+    }
+
     @PutMapping("/cart/items/{productId}")
     public ResponseEntity<OrderResponse> updateCartItem(@PathVariable Long productId,
                                                         @RequestBody Map<String, Object> data,

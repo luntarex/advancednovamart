@@ -64,6 +64,12 @@ export class CartService {
     );
   }
 
+  checkoutCart(): Observable<any> {
+    return this.orderService.checkoutCart().pipe(
+      tap(() => this.setState([]))
+    );
+  }
+
   private setState(items: CartItem[]): void {
     this.itemsSubject.next(items);
     this.countSubject.next(items.reduce((total, item) => total + item.quantity, 0));
