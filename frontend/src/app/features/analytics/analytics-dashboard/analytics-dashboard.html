@@ -1,1 +1,171 @@
-﻿<!-- Skeleton placeholder -->
+<section class="analytics-page">
+  <header class="page-head">
+    <div>
+      <h1>Analytics Dashboard</h1>
+      @if (isCorporate()) {
+        <p>Corporate scope: store-level revenue, category performance, and customer segment trends.</p>
+      } @else if (isAdmin()) {
+        <p>Admin scope: platform-wide analytics and cross-tenant visibility.</p>
+      }
+    </div>
+
+    <div class="head-actions">
+      <app-dropdown
+        [ngModel]="range()"
+        (ngModelChange)="range.set($event); reload()"
+        [options]="rangeOptions"
+        placeholder="Select range"
+      ></app-dropdown>
+      <button class="ghost-btn" type="button" (click)="toggleWidgetPanel()">Configure Widgets</button>
+      <button class="ghost-btn" type="button" (click)="exportCsv()">Export CSV</button>
+      <button type="button" (click)="reload()">Refresh</button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (isWidgetPanelOpen()) {
+    <section class="widget-config">
+      <h3>Dashboard Widgets</h3>
+      <ul>
+        @for (widgetId of widgetOrder(); track widgetId) {
+          <li>
+            <label>
+              <input
+                type="checkbox"
+                [checked]="widgetVisibility()[widgetId]"
+                (change)="toggleWidget(widgetId)"
+              />
+              <span>{{ getWidgetTitle(widgetId) }}</span>
+            </label>
+            <div class="widget-actions">
+              <button type="button" class="ghost-btn" (click)="moveWidgetUp(widgetId)">Up</button>
+              <button type="button" class="ghost-btn" (click)="moveWidgetDown(widgetId)">Down</button>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <section class="kpi-grid">
+    <article class="kpi-card"><span>Total Revenue</span><strong>{{ totalRevenue() | currency:'TRY':'symbol':'1.0-0' }}</strong></article>
+    <article class="kpi-card">
+      <span>Top Category</span>
+      <strong>@if (topCategory()) { {{ topCategory()!.label }} } @else { - }</strong>
+    </article>
+    <article class="kpi-card"><span>Avg Segment Size</span><strong>{{ avgSegmentSize() | number:'1.0-0' }}</strong></article>
+    <article class="kpi-card">
+      <span>Trend Delta</span>
+      <strong [class.positive]="isTrendPositive()" [class.negative]="!isTrendPositive()">
+        {{ trendDeltaPercent() | number:'1.0-1' }}%
+      </strong>
+    </article>
+    <article class="kpi-card">
+      <span>Top Product</span>
+      <strong>@if (topProduct()) { {{ topProduct()!.label }} } @else { - }</strong>
+    </article>
+    <article class="kpi-card"><span>Projected Revenue</span><strong>{{ projectedRevenue() | currency:'TRY':'symbol':'1.0-0' }}</strong></article>
+  </section>
+
+  @if (isLoading()) {
+    <p class="status">Loading analytics...</p>
+  } @else {
+    <section class="panel-grid">
+      @for (widgetId of visibleWidgetOrder(); track widgetId) {
+        @if (widgetId === 'revenueTrend') {
+          <article class="panel">
+            <h3>Revenue Trend</h3>
+            <ul class="metric-list">
+              @for (point of revenueTrend(); track point.label) {
+                <li>
+                  <div class="metric-meta">
+                    <span>{{ point.label }}</span>
+                    <strong>{{ point.value | currency:'TRY':'symbol':'1.0-0' }}</strong>
+                  </div>
+                  <div class="bar"><span [style.width.%]="widthByRevenue(point.value)"></span></div>
+                </li>
+              }
+            </ul>
+          </article>
+        } @else if (widgetId === 'salesByCategory') {
+          <article class="panel">
+            <h3>Sales by Category</h3>
+            <ul class="metric-list">
+              @for (point of salesByCategory(); track point.label) {
+                <li>
+                  <div class="metric-meta">
+                    <span>{{ point.label }}</span>
+                    <strong>{{ point.value | currency:'TRY':'symbol':'1.0-0' }}</strong>
+                  </div>
+                  <div class="bar bar-accent"><span [style.width.%]="widthByCategory(point.value)"></span></div>
+                </li>
+              }
+            </ul>
+          </article>
+        } @else if (widgetId === 'topProducts') {
+          <article class="panel">
+            <h3>Top Products</h3>
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Product</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (product of topProducts(); track product.label; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ product.label }}</td>
+                    <td>{{ product.value | currency:'TRY':'symbol':'1.0-0' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </article>
+        } @else if (widgetId === 'customerSegments') {
+          <article class="panel">
+            <h3>Customer Segments</h3>
+            <ul class="metric-list">
+              @for (segment of customerSegments(); track segment.label) {
+                <li>
+                  <div class="metric-meta">
+                    <span>{{ segment.label }}</span>
+                    <strong>{{ segment.value }}</strong>
+                  </div>
+                  <div class="bar bar-muted"><span [style.width.%]="widthBySegment(segment.value)"></span></div>
+                </li>
+              }
+            </ul>
+          </article>
+        } @else if (widgetId === 'executiveInsights') {
+          <article class="panel panel-wide">
+            <h3>Executive Insights</h3>
+            <ul class="insight-list">
+              <li>
+                <span>Category Concentration (Top 3)</span>
+                <strong>{{ categoryConcentration() | number:'1.0-1' }}%</strong>
+              </li>
+              <li>
+                <span>Total Segment Population</span>
+                <strong>{{ segmentTotal() | number:'1.0-0' }}</strong>
+              </li>
+              <li>
+                <span>Segment Diversity</span>
+                <strong>{{ segmentDiversity() | number:'1.0-0' }}%</strong>
+              </li>
+              <li>
+                <span>Trend Direction</span>
+                <strong>{{ isTrendPositive() ? 'Upward' : 'Downward' }}</strong>
+              </li>
+            </ul>
+          </article>
+        }
+      }
+    </section>
+  }
+</section>
