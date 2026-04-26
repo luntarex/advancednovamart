@@ -1,1 +1,115 @@
-﻿<!-- Skeleton placeholder -->
+<section class="checkout-page">
+  <header class="checkout-head">
+    <h1>Checkout</h1>
+    <a routerLink="/cart">Back to cart</a>
+  </header>
+
+  @if (!canCheckout()) {
+    <p class="status">Checkout is available for individual users only.</p>
+  } @else if (cartItems().length === 0) {
+    <p class="status">Your cart is empty. Add products before checkout.</p>
+  } @else {
+    <div class="checkout-layout">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <h3>Shipping Information</h3>
+
+        <section class="saved-address-section">
+          <div class="saved-address-head">
+            <h4>Saved Addresses</h4>
+            <button type="button" class="secondary-btn" (click)="saveCurrentAddress()">Save Current Address</button>
+          </div>
+
+          @if (savedAddresses().length === 0) {
+            <p class="saved-empty">No saved addresses yet. Fill the form and save your first address.</p>
+          } @else {
+            <ul class="saved-address-list">
+              @for (address of savedAddresses(); track trackBySavedAddress($index, address)) {
+                <li>
+                  <button
+                    type="button"
+                    class="saved-address-card"
+                    [class.active]="isSelectedAddress(address)"
+                    (click)="chooseSavedAddress(address.id)"
+                  >
+                    <strong>{{ address.city }}, {{ address.district }}</strong>
+                    <p>{{ address.addressLine }}</p>
+                    <span>{{ address.phone }}</span>
+                  </button>
+                  <button type="button" class="remove-address-btn" (click)="removeSavedAddress(address.id, $event)">
+                    Remove
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <label for="addressLine">Address</label>
+        <input id="addressLine" type="text" formControlName="addressLine" placeholder="Street and building details" />
+        @if (form.controls.addressLine.touched && form.controls.addressLine.invalid) {
+          <small>Please enter a full delivery address.</small>
+        }
+
+        <div class="row">
+          <div>
+            <label for="city">City</label>
+            <input id="city" type="text" formControlName="city" />
+          </div>
+          <div>
+            <label for="district">District</label>
+            <input id="district" type="text" formControlName="district" />
+          </div>
+        </div>
+
+        <label for="phone">Phone</label>
+        <input id="phone" type="text" formControlName="phone" placeholder="+90..." />
+
+        @if (addressMessage()) {
+          <p class="address-message">{{ addressMessage() }}</p>
+        }
+
+        <app-dropdown
+          label="Payment"
+          formControlName="paymentMethod"
+          [options]="paymentOptions"
+        ></app-dropdown>
+
+        @if (submitError()) {
+          <p class="submit-error">{{ submitError() }}</p>
+        }
+
+        @if (submitSuccess()) {
+          <p class="submit-success">{{ submitSuccess() }}</p>
+        }
+
+        <button class="primary-btn" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) { Placing order... } @else { Place Order }
+        </button>
+      </form>
+
+      <aside class="summary">
+        <h3>Order Summary</h3>
+        <ul>
+          @for (item of cartItems(); track trackByProductId($index, item)) {
+            <li>
+              <div>
+                <strong>{{ item.name }}</strong>
+                <p>Qty: {{ item.quantity }}</p>
+              </div>
+              <div class="price-col">
+                <span>{{ (item.unitPrice * item.quantity) | currency:'TRY':'symbol':'1.0-0' }}</span>
+                <button type="button" (click)="removeItem(item.productId)">Remove</button>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <div class="totals">
+          <p><span>Subtotal</span><strong>{{ subtotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+          <p><span>Shipping</span><strong>{{ shippingFee() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+          <p class="grand"><span>Total</span><strong>{{ grandTotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+        </div>
+      </aside>
+    </div>
+  }
+</section>
