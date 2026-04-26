@@ -85,9 +85,33 @@
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
   color: var(--text-main);
-  width: 2rem;
-  height: 2rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.quantity-row button:hover:not(:disabled) {
+  background: var(--primary-action);
+  color: var(--text-on-action);
+  border-color: var(--primary-action);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.quantity-row button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.quantity-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .quantity-row span {
@@ -102,10 +126,23 @@
   border-radius: 10px;
   padding: 0.65rem 0.8rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+}
+
+.primary-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .primary-btn:disabled {
   opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .ghost-btn {
