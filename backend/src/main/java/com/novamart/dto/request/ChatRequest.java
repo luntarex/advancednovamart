@@ -1,3 +1,13 @@
-﻿package com.novamart.dto.request;
+package com.novamart.dto.request;
 
-public class ChatRequest {}
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class ChatRequest {
+
+    @NotBlank
+    private String question;
+
+    private String sessionId;
+}
