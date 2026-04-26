@@ -1,0 +1,54 @@
+/* You can add global styles to this file, and also import other style files */
+:root {
+  /* 60-30-10 Palette */
+  --bg-primary: #FFFFFF;    /* 60% Background */
+  --bg-secondary: #F9FAFB;  /* 30% Surface (Gray 50) */
+  --surface: #F3F4F6;       /* 30% Secondary (Gray 100) */
+  
+  --primary-action: #4F46E5; /* 10% Vibrant Indigo */
+  --urgency-accent: #F43F5E; /* Punchy Rose */
+  --trust-accent: #FBBF24;   /* Warm Amber */
+  
+  /* Text and Borders */
+  --text-main: #111827;      /* Gray 900 */
+  --text-muted: #4B5563;     /* Gray 600 */
+  --text-on-action: #FFFFFF;
+  --border-light: #E5E7EB;   /* Gray 200 */
+  
+  /* Golden Ratio Composition (phi ≈ 1.618) */
+  --phi: 1.618;
+  --spacing-unit: 1rem;
+  --spacing-xs: calc(var(--spacing-unit) / (var(--phi) * var(--phi)));
+  --spacing-sm: calc(var(--spacing-unit) / var(--phi));
+  --spacing-md: var(--spacing-unit);
+  --spacing-lg: calc(var(--spacing-unit) * var(--phi));
+  --spacing-xl: calc(var(--spacing-unit) * var(--phi) * var(--phi));
+  
+  --radius-phi: calc(0.618 * 1rem); /* 0.618 based curve */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  line-height: var(--phi); /* Golden ratio line height */
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,3 @@
+﻿class Guardrails:
+    pass
+
