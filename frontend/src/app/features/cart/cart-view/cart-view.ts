@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartItem } from '../../../core/models/cart.model';
 import { CartService } from '../../../core/services/cart/cart.service';
+import { PaymentService } from '../../../core/services/payment.service';
 
 @Component({
   selector: 'app-cart-view',
@@ -13,7 +14,10 @@ import { CartService } from '../../../core/services/cart/cart.service';
 })
 export class CartView {
   private readonly cartService = inject(CartService);
+  private readonly paymentService = inject(PaymentService);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly isCheckingOut = signal(false);
 
   readonly items = signal<CartItem[]>([]);
   readonly infoMessage = signal('');
@@ -49,6 +53,33 @@ export class CartView {
     this.cartService.clearCart().subscribe({
       next: () => this.infoMessage.set('Cart cleared.'),
       error: () => this.infoMessage.set('Could not clear cart right now.'),
+    });
+  }
+
+  checkout(): void {
+    if (this.items().length === 0) return;
+    
+    this.isCheckingOut.set(true);
+    this.infoMessage.set('Preparing secure checkout...');
+
+    this.cartService.checkoutCart().subscribe({
+      next: (order) => {
+        this.paymentService.createCheckoutSession(order.id).subscribe({
+          next: (response) => {
+            this.paymentService.redirectToStripe(response.url);
+          },
+          error: (err) => {
+            console.error('Stripe error', err);
+            this.infoMessage.set('Failed to initiate payment.');
+            this.isCheckingOut.set(false);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Checkout error', err);
+        this.infoMessage.set('Failed to prepare checkout.');
+        this.isCheckingOut.set(false);
+      }
     });
   }
 }

@@ -41,6 +41,10 @@ export class OrderService {
     return this.http.delete<void>(`${this.apiUrl}/cart`);
   }
 
+  checkoutCart(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/cart/checkout`, {});
+  }
+
   getCartCount(): Observable<number> {
     return this.http.get<{ count: number }>(`${this.apiUrl}/cart/count`).pipe(
       map((res) => Number(res?.count ?? 0)),

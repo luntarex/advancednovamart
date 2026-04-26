@@ -9,6 +9,7 @@ import { AddressService } from '../../../core/services/address/address.service';
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { CartService } from '../../../core/services/cart/cart.service';
 import { OrderService } from '../../../core/services/order/order.service';
+import { PaymentService } from '../../../core/services/payment.service';
 import { DropdownComponent, DropdownOption } from '../../../shared/components/dropdown/dropdown';
 
 @Component({
@@ -24,6 +25,7 @@ export class Checkout {
   private readonly addressService = inject(AddressService);
   private readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
+  private readonly paymentService = inject(PaymentService);
   private readonly router = inject(Router);
 
   readonly isSubmitting = signal(false);
@@ -121,16 +123,29 @@ export class Checkout {
 
     this.orderService.create(payload).subscribe({
       next: (createdOrder) => {
+        const id = createdOrder?.id ?? 1;
         this.submitSuccess.set('Order placed successfully.');
         this.cartService.clearCart().subscribe({
           next: () => {
             this.cartItems.set([]);
-            const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id]);
+            if (payload.paymentMethod === 'CREDIT_CARD') {
+              this.submitSuccess.set('Redirecting to secure payment...');
+              this.paymentService.createCheckoutSession(id).subscribe({
+                next: (res) => this.paymentService.redirectToStripe(res.url),
+                error: () => this.submitError.set('Payment session failed. Please pay from your orders page.')
+              });
+            } else {
+              this.router.navigate(['/orders', id]);
+            }
           },
           error: () => {
-            const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id]);
+            if (payload.paymentMethod === 'CREDIT_CARD') {
+              this.paymentService.createCheckoutSession(id).subscribe({
+                next: (res) => this.paymentService.redirectToStripe(res.url)
+              });
+            } else {
+              this.router.navigate(['/orders', id]);
+            }
           },
         });
       },
