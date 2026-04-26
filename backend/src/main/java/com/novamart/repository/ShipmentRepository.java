@@ -1,3 +1,11 @@
-﻿package com.novamart.repository;
+package com.novamart.repository;
 
-public interface ShipmentRepository {}
+import com.novamart.entity.Shipment;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
+
+    Optional<Shipment> findByOrderId(Long orderId);
+}

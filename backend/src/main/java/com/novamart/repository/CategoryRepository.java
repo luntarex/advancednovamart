@@ -1,3 +1,11 @@
-﻿package com.novamart.repository;
+package com.novamart.repository;
 
-public interface CategoryRepository {}
+import com.novamart.entity.Category;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface CategoryRepository extends JpaRepository<Category, Long> {
+
+    List<Category> findByParentIsNull();
+}

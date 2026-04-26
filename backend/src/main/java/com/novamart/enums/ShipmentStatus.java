@@ -1,3 +1,8 @@
-﻿package com.novamart.enums;
+package com.novamart.enums;
 
-public enum ShipmentStatus { PLACEHOLDER }
+public enum ShipmentStatus {
+    PENDING,
+    IN_TRANSIT,
+    DELIVERED,
+    RETURNED
+}

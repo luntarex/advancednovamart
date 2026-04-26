@@ -1,3 +1,7 @@
-﻿package com.novamart.enums;
+package com.novamart.enums;
 
-public enum StoreStatus { PLACEHOLDER }
+public enum StoreStatus {
+    OPEN,
+    CLOSED,
+    PENDING_APPROVAL
+}

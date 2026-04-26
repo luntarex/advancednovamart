@@ -1,3 +1,7 @@
-﻿package com.novamart.enums;
+package com.novamart.enums;
 
-public enum RoleType { PLACEHOLDER }
+public enum RoleType {
+    ADMIN,
+    CORPORATE,
+    INDIVIDUAL
+}
