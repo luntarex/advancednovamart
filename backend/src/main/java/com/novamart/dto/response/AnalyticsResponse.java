@@ -1,3 +1,13 @@
-﻿package com.novamart.dto.response;
+package com.novamart.dto.response;
 
-public class AnalyticsResponse {}
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+@AllArgsConstructor
+public class AnalyticsResponse {
+    private String label;
+    private Double value;
+}

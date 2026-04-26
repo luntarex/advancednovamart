@@ -1,3 +1,11 @@
-﻿package com.novamart.dto.response;
+package com.novamart.dto.response;
 
-public class ChatResponse {}
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class ChatResponse {
+    private String answer;
+    private String visualizationCode;
+}
