@@ -1,3 +1,16 @@
-﻿package com.novamart.dto.request;
+package com.novamart.dto.request;
 
-public class CreateUserRequest {}
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class CreateUserRequest {
+
+    @NotBlank
+    @Email
+    private String email;
+
+    @NotBlank
+    private String roleType;
+}

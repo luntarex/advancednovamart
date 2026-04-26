@@ -1,3 +1,11 @@
-﻿package com.novamart.dto.request;
+package com.novamart.dto.request;
 
-public class CreateStoreRequest {}
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class CreateStoreRequest {
+
+    @NotBlank
+    private String name;
+}
