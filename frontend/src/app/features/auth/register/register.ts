@@ -61,6 +61,21 @@ export class RegisterComponent {
       })
       .subscribe({
         next: () => {
+          if (roleType === 'INDIVIDUAL') {
+            this.auth.login(email, password).subscribe({
+              next: () => {
+                this.submitSuccess.set('Account created. Complete your profile to continue.');
+                this.router.navigate(['/auth/complete-profile']);
+              },
+              error: () => {
+                this.submitSuccess.set('Account created. Please sign in to continue.');
+                setTimeout(() => this.router.navigate(['/auth/login']), 1200);
+              },
+              complete: () => this.isSubmitting.set(false),
+            });
+            return;
+          }
+
           this.submitSuccess.set('Your account was created. You can sign in now.');
           this.form.reset({
             fullName: '',
@@ -69,7 +84,7 @@ export class RegisterComponent {
             password: '',
             confirmPassword: '',
           });
-          setTimeout(() => this.router.navigate(['/auth/login']), 2000);
+          setTimeout(() => this.router.navigate(['/auth/login']), 1200);
         },
         error: (error) => {
           const apiMessage = error?.error?.message;

@@ -1,0 +1,49 @@
+<section class="auth-page">
+  <div class="auth-card profile-card">
+    <div class="auth-head">
+      <h1>Complete Your Profile</h1>
+      <p>One quick step so we can personalize your shopping and delivery experience.</p>
+    </div>
+
+    @if (isLoading()) {
+      <p class="status">Loading your account details...</p>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label for="complete-name">Full Name</label>
+        <input id="complete-name" type="text" formControlName="fullName" placeholder="John Doe" />
+
+        <label for="complete-email">Email</label>
+        <input id="complete-email" type="email" formControlName="email" placeholder="you@example.com" />
+
+        <label for="complete-phone">Phone</label>
+        <input id="complete-phone" type="text" formControlName="phone" placeholder="+90 5xx xxx xx xx" />
+
+        <label for="complete-city">City</label>
+        <input id="complete-city" type="text" formControlName="city" placeholder="Istanbul" />
+
+        <label for="complete-gender">Gender (Optional)</label>
+        <input id="complete-gender" type="text" formControlName="gender" placeholder="Optional" />
+
+        <app-dropdown
+          label="Membership"
+          formControlName="membershipType"
+          [options]="membershipOptions"
+        ></app-dropdown>
+
+        @if (submitError()) {
+          <p class="submit-error">{{ submitError() }}</p>
+        }
+
+        @if (submitSuccess()) {
+          <p class="submit-success">{{ submitSuccess() }}</p>
+        }
+
+        <button class="auth-btn" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) { Saving... } @else { Save And Continue }
+        </button>
+      </form>
+
+      <button class="skip-btn" type="button" (click)="skipForNow()">Skip for now</button>
+    }
+  </div>
+</section>

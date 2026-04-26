@@ -1,0 +1,121 @@
+.auth-page {
+  min-height: calc(100vh - 180px);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 1.4rem;
+  box-shadow: 0 20px 35px rgba(17, 24, 39, 0.08);
+}
+
+.profile-card {
+  max-width: 560px;
+}
+
+.auth-head h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.auth-head p {
+  margin: 0.45rem 0 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+label {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.72rem 0.8rem;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--primary-action);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
+}
+
+.status {
+  border: 1px dashed var(--border-light);
+  border-radius: 10px;
+  padding: 0.75rem;
+  color: var(--text-muted);
+}
+
+.submit-error {
+  margin-top: 0.4rem;
+  color: var(--urgency-accent);
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.submit-success {
+  margin-top: 0.4rem;
+  color: #065f46;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.auth-btn {
+  margin-top: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.78rem 1rem;
+  background: var(--primary-action);
+  color: var(--text-on-action);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.94rem;
+}
+
+.auth-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.skip-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  padding: 0.62rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.skip-btn:hover {
+  border-color: var(--primary-action);
+  color: var(--primary-action);
+}

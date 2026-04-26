@@ -1,1 +1,71 @@
-﻿<!-- Skeleton placeholder -->
+<section class="profile-page">
+  <header class="page-head">
+    <h1>Profile & Preferences</h1>
+    <p>Manage your account details and communication preferences.</p>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner banner-warn">{{ errorMessage() }}</p>
+  }
+
+  @if (successMessage()) {
+    <p class="banner banner-success">{{ successMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading profile...</p>
+  } @else {
+    <section class="grid">
+      <article class="card">
+        <h3>Account Overview</h3>
+        @if (user()) {
+          <ul class="overview">
+            <li><span>Email</span><strong>{{ user()!.email }}</strong></li>
+            <li><span>Account Type</span><strong>{{ getAccountTypeLabel(user()!.roleType) }}</strong></li>
+            <li><span>Joined</span><strong>{{ user()!.createdAt | date:'mediumDate' }}</strong></li>
+          </ul>
+        }
+      </article>
+
+      <article class="card card-wide">
+        <h3>Preferences</h3>
+        <div class="pref-list">
+          <label>
+            <span>Email notifications</span>
+            <input
+              type="checkbox"
+              [checked]="preferences().emailNotifications"
+              (change)="updatePreference('emailNotifications', $any($event.target).checked)"
+            />
+          </label>
+          <label>
+            <span>SMS notifications</span>
+            <input
+              type="checkbox"
+              [checked]="preferences().smsNotifications"
+              (change)="updatePreference('smsNotifications', $any($event.target).checked)"
+            />
+          </label>
+          <label>
+            <span>Marketing emails</span>
+            <input
+              type="checkbox"
+              [checked]="preferences().marketingOptIn"
+              (change)="updatePreference('marketingOptIn', $any($event.target).checked)"
+            />
+          </label>
+          <label>
+            <span>Dark mode preference</span>
+            <input
+              type="checkbox"
+              [checked]="preferences().darkMode"
+              (change)="updatePreference('darkMode', $any($event.target).checked)"
+            />
+          </label>
+        </div>
+
+        <button class="primary-btn" type="button" (click)="savePreferences()">Save Preferences</button>
+      </article>
+    </section>
+  }
+</section>
