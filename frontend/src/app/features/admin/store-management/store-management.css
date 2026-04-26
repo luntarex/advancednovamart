@@ -1,1 +1,256 @@
-﻿/* Skeleton placeholder */
+.admin-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.page-head h1 {
+  margin: 0;
+  color: var(--text-main);
+}
+
+.page-head p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+
+.kpis {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.kpis div {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  padding: 0.55rem 0.8rem;
+  min-width: 76px;
+  display: grid;
+}
+
+.kpis strong {
+  color: var(--text-main);
+}
+
+.kpis span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.banner {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+  color: #92400e;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.card {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.card h3 {
+  margin: 0;
+  color: var(--text-main);
+}
+
+.category-form {
+  display: flex;
+  gap: 0.55rem;
+}
+
+input,
+select {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  color: var(--text-main);
+  background: var(--bg-primary);
+}
+
+button {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.category-form button {
+  border: none;
+  background: var(--primary-action);
+  color: var(--text-on-action);
+  font-weight: 700;
+}
+
+.category-list,
+.revenue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.category-list li,
+.revenue-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.58rem 0.7rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.category-list li:last-child,
+.revenue-list li:last-child {
+  border-bottom: none;
+}
+
+.category-list span,
+.revenue-list span {
+  color: var(--text-main);
+}
+
+.revenue-list strong {
+  color: var(--primary-action);
+}
+
+.table-tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.filters {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.62rem;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.86rem;
+}
+
+th {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+td {
+  color: var(--text-main);
+}
+
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-open {
+  background: rgba(16, 185, 129, 0.16);
+  color: #065f46;
+}
+
+.status-closed {
+  background: rgba(244, 63, 94, 0.16);
+  color: #9f1239;
+}
+
+.status-pending_approval {
+  background: rgba(251, 191, 36, 0.16);
+  color: #92400e;
+}
+
+.actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.audit-list li {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(170px, 1fr) auto;
+  gap: 0.6rem;
+  padding: 0.58rem 0.7rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.audit-list li:last-child {
+  border-bottom: none;
+}
+
+.audit-list strong {
+  color: var(--text-main);
+}
+
+.audit-list span,
+.audit-list time {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.status {
+  color: var(--text-muted);
+}
+
+@media (max-width: 980px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .table-tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .audit-list li {
+    grid-template-columns: 1fr;
+  }
+}

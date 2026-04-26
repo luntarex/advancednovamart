@@ -1,1 +1,131 @@
-﻿<!-- Skeleton placeholder -->
+<section class="admin-page">
+  <header class="page-head">
+    <div>
+      <h1>User Management</h1>
+      <p>Create, suspend, and manage user accounts with role-based controls.</p>
+    </div>
+    <div class="kpis">
+      <div><strong>{{ activeCount() }}</strong><span>Active</span></div>
+      <div><strong>{{ suspendedCount() }}</strong><span>Suspended</span></div>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  <section class="cards">
+    <article class="card">
+      <h3>Create User</h3>
+      <form [formGroup]="createUserForm" (ngSubmit)="createUser()" novalidate>
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="new.user@example.com" />
+
+        <app-dropdown
+          label="Role"
+          formControlName="roleType"
+          [options]="roleOptions"
+        ></app-dropdown>
+
+        <button type="submit">Create</button>
+      </form>
+    </article>
+
+    <article class="card">
+      <h3>System Settings</h3>
+      <label class="toggle-row">
+        <span>Registration enabled</span>
+        <input
+          type="checkbox"
+          [ngModel]="systemSettings().registrationEnabled"
+          (ngModelChange)="updateSetting('registrationEnabled', $event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+      </label>
+      <label class="toggle-row">
+        <span>Maintenance mode</span>
+        <input
+          type="checkbox"
+          [ngModel]="systemSettings().maintenanceMode"
+          (ngModelChange)="updateSetting('maintenanceMode', $event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+      </label>
+      <label class="toggle-row">
+        <span>Strict password policy</span>
+        <input
+          type="checkbox"
+          [ngModel]="systemSettings().strictPasswordPolicy"
+          (ngModelChange)="updateSetting('strictPasswordPolicy', $event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+      </label>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="table-tools">
+      <h3>Users</h3>
+      <div class="filters">
+        <input type="text" placeholder="Search user..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" [ngModelOptions]="{ standalone: true }" />
+        <app-dropdown
+          [ngModel]="roleFilter()"
+          (ngModelChange)="roleFilter.set($event)"
+          [ngModelOptions]="{ standalone: true }"
+          [options]="roleFilterOptions"
+        ></app-dropdown>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <p class="status">Loading users...</p>
+    } @else if (filteredUsers().length === 0) {
+      <p class="status">No users match your filters.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers(); track trackById($index, user)) {
+              <tr>
+                <td>#{{ user.id }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.roleType }}</td>
+                <td><span class="status-pill status-{{ user.status.toLowerCase() }}">{{ user.status }}</span></td>
+                <td>{{ user.createdAt | date:'mediumDate' }}</td>
+                <td class="actions">
+                  <button type="button" (click)="toggleSuspension(user)">
+                    @if (user.status === 'ACTIVE') { Suspend } @else { Reactivate }
+                  </button>
+                  <button class="danger" type="button" (click)="deleteUser(user)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="card">
+    <h3>Audit Log</h3>
+    <ul class="audit-list">
+      @for (entry of auditLog(); track entry.id) {
+        <li>
+          <strong>{{ entry.action }}</strong>
+          <span>{{ entry.actor }}</span>
+          <time>{{ entry.at | date:'short' }}</time>
+        </li>
+      }
+    </ul>
+  </section>
+</section>
