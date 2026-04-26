@@ -1,3 +1,15 @@
-﻿package com.novamart.dto.request;
+package com.novamart.dto.request;
 
-public class UpdateShipmentRequest {}
+import lombok.Data;
+
+@Data
+public class UpdateShipmentRequest {
+
+    private String status;
+
+    private String warehouse;
+
+    private String mode;
+
+    private String trackingNumber;
+}
