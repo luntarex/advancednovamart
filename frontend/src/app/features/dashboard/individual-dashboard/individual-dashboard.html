@@ -1,1 +1,78 @@
-﻿<!-- Skeleton placeholder -->
+<section class="dash-page">
+  <header class="dash-head">
+    <h1>Individual Dashboard</h1>
+    <p>Track personal spending, purchases, shipments, and review activity.</p>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  <section class="kpi-grid">
+    <article class="kpi-card"><span>Total Spend</span><strong>{{ totalSpend() | currency:'TRY':'symbol':'1.0-0' }}</strong></article>
+    <article class="kpi-card"><span>Delivered Orders</span><strong>{{ deliveredCount() }}</strong></article>
+    <article class="kpi-card"><span>Active Shipments</span><strong>{{ activeShipmentCount() }}</strong></article>
+    <article class="kpi-card"><span>Avg Review Rating</span><strong>{{ avgRating() | number:'1.1-1' }}/5</strong></article>
+  </section>
+
+  <section class="panel-grid">
+    <article class="panel">
+      <h3>Recent Orders</h3>
+      @if (isLoading()) {
+        <p class="status">Loading orders...</p>
+      } @else {
+        <ul>
+          @for (order of recentOrders(); track order.id) {
+            <li>
+              <div>
+                <strong>#{{ order.id }}</strong>
+                <p>{{ order.orderDate | date:'mediumDate' }} · {{ order.status }}</p>
+              </div>
+              <span>{{ order.grandTotal | currency:'TRY':'symbol':'1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="panel">
+      <h3>Shipment Status</h3>
+      <ul>
+        @for (shipment of recentShipments(); track shipment.id) {
+          <li>
+            <div>
+              <strong>{{ shipment.trackingNumber || ('TRK-' + shipment.id) }}</strong>
+              <p>Order #{{ shipment.orderId }} · {{ shipment.mode }}</p>
+            </div>
+            <span class="pill pill-{{ shipment.status.toLowerCase() }}">{{ shipment.status }}</span>
+          </li>
+        }
+      </ul>
+    </article>
+
+    <article class="panel panel-wide">
+      <h3>Your Review Activity</h3>
+      <ul>
+        @for (review of recentReviews(); track review.id) {
+          <li>
+            <div>
+              <strong>Product #{{ review.productId }}</strong>
+              <p>{{ review.reviewText || 'No comment provided.' }}</p>
+            </div>
+            <span>{{ review.starRating }}/5</span>
+          </li>
+        }
+      </ul>
+    </article>
+    <article class="panel panel-wide">
+      <h3>Spending Analytics</h3>
+      <div style="display: block;">
+        <canvas baseChart
+                [data]="barChartData()"
+                [options]="barChartOptions"
+                [type]="'bar'">
+        </canvas>
+      </div>
+    </article>
+  </section>
+</section>

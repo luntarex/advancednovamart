@@ -1,1 +1,74 @@
-﻿<!-- Skeleton placeholder -->
+<section class="dash-page">
+  <header class="dash-head">
+    <h1>Corporate Dashboard</h1>
+    <p>Monitor store KPIs, inventory risks, fulfillment pipeline, and revenue trends.</p>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  <section class="kpi-grid">
+    <article class="kpi-card"><span>Total Revenue</span><strong>{{ totalRevenue() | currency:'TRY':'symbol':'1.0-0' }}</strong></article>
+    <article class="kpi-card"><span>Total Orders</span><strong>{{ orderCount() }}</strong></article>
+    <article class="kpi-card"><span>Pending Fulfillment</span><strong>{{ pendingFulfillment() }}</strong></article>
+    <article class="kpi-card"><span>Low Stock Alerts</span><strong>{{ lowStockProducts().length }}</strong></article>
+  </section>
+
+  <section class="panel-grid">
+    <article class="panel">
+      <h3>Low Stock Alerts</h3>
+      @if (isLoading()) {
+        <p class="status">Loading inventory...</p>
+      } @else if (lowStockProducts().length === 0) {
+        <p class="status">No low-stock products right now.</p>
+      } @else {
+        <ul>
+          @for (product of lowStockProducts(); track product.id) {
+            <li>
+              <div>
+                <strong>{{ product.name }}</strong>
+                <p>{{ product.sku }}</p>
+              </div>
+              <span class="pill">{{ product.stockQuantity }} left</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="panel">
+      <h3>Revenue Trend</h3>
+      @if (revenueTrend().length === 0) {
+        <p class="status">No revenue trend data found for your scope.</p>
+      } @else {
+        <div style="display: block;">
+          <canvas baseChart
+                  [data]="lineChartData()"
+                  [options]="lineChartOptions"
+                  [type]="'line'">
+          </canvas>
+        </div>
+      }
+    </article>
+
+    <article class="panel panel-wide">
+      <h3>Top Priced Products</h3>
+      @if (topProducts().length === 0) {
+        <p class="status">No product data found for your store.</p>
+      } @else {
+        <ul>
+          @for (product of topProducts(); track product.id) {
+            <li>
+              <div>
+                <strong>{{ product.name }}</strong>
+                <p>{{ product.description || 'No description' }}</p>
+              </div>
+              <span>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+  </section>
+</section>

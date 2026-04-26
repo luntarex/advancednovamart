@@ -1,1 +1,74 @@
-﻿<!-- Skeleton placeholder -->
+<section class="dash-page">
+  <header class="dash-head">
+    <h1>Admin Dashboard</h1>
+    <p>Platform-wide analytics, cross-store comparisons, and governance visibility.</p>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  <section class="kpi-grid">
+    <article class="kpi-card"><span>Total Users</span><strong>{{ totalUsers() }}</strong></article>
+    <article class="kpi-card"><span>Total Stores</span><strong>{{ totalStores() }}</strong></article>
+    <article class="kpi-card"><span>Active Stores</span><strong>{{ activeStores() }}</strong></article>
+    <article class="kpi-card"><span>Platform Revenue</span><strong>{{ platformRevenue() | currency:'TRY':'symbol':'1.0-0' }}</strong></article>
+  </section>
+
+  <section class="panel-grid">
+    <article class="panel">
+      <h3>Role Distribution</h3>
+      <div style="display: block;">
+        <canvas baseChart
+                [data]="pieChartData()"
+                [options]="pieChartOptions"
+                [type]="'pie'">
+        </canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h3>Customer Segments</h3>
+      <div style="display: block;">
+        <canvas baseChart
+                [data]="barChartData()"
+                [options]="barChartOptions"
+                [type]="'bar'">
+        </canvas>
+      </div>
+    </article>
+
+    <article class="panel panel-wide">
+      <h3>Cross-Store Revenue Comparison</h3>
+      @if (isLoading()) {
+        <p class="status">Loading platform metrics...</p>
+      } @else {
+        <ul>
+          @for (entry of storeRevenue(); track entry.id) {
+            <li>
+              <div>
+                <strong>{{ entry.name }}</strong>
+                <p>{{ entry.status }}</p>
+              </div>
+              <span>{{ entry.revenue | currency:'TRY':'symbol':'1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="panel panel-wide">
+      <h3>Audit & Monitoring</h3>
+      <ul>
+        @for (event of auditEvents(); track event.id) {
+          <li>
+            <div>
+              <strong>{{ event.title }}</strong>
+              <p>{{ event.at }}</p>
+            </div>
+          </li>
+        }
+      </ul>
+    </article>
+  </section>
+</section>
