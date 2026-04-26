@@ -1,1 +1,67 @@
-﻿<!-- Skeleton placeholder -->
+<section class="order-detail-page">
+  <a class="back-link" routerLink="/orders">← Back to orders</a>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading order details...</p>
+  } @else if (!order()) {
+    <p class="status">Order could not be found.</p>
+  } @else {
+    <article class="order-card">
+      <header class="order-card-head">
+        <div>
+          <h1>Order #{{ order()!.id }}</h1>
+          <p>{{ order()!.orderDate | date:'fullDate' }}</p>
+        </div>
+        <span class="status-pill status-{{ order()!.status.toLowerCase() }}">{{ order()!.status }}</span>
+      </header>
+
+      <section class="tracking">
+        <h3>Shipment Tracking</h3>
+        <ol>
+          @for (step of trackingSteps; track step; let i = $index) {
+            <li [class.active]="i <= currentStepIndex()">
+              <span class="dot"></span>
+              <span>{{ step }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+
+      @if (canManageOrders()) {
+        <section class="manage-box">
+          <h3>Fulfillment Actions</h3>
+          <app-dropdown
+            [ngModel]="order()!.status"
+            (ngModelChange)="updateStatus($event)"
+            [options]="statusOptions"
+          ></app-dropdown>
+        </section>
+      }
+
+      <section class="summary">
+        <h3>Order Summary</h3>
+        <p><strong>Total:</strong> {{ order()!.grandTotal | currency:'TRY':'symbol':'1.0-0' }}</p>
+        <p><strong>Payment:</strong> {{ order()!.paymentMethod }}</p>
+      </section>
+
+      <section class="items">
+        <h3>Items</h3>
+        <ul>
+          @for (item of order()!.items || []; track item.id) {
+            <li>
+              <div>
+                <strong>{{ item.productName || ('Product #' + item.productId) }}</strong>
+                <p>Qty: {{ item.quantity }}</p>
+              </div>
+              <span>{{ item.price | currency:'TRY':'symbol':'1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    </article>
+  }
+</section>

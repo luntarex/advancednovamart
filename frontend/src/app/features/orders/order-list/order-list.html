@@ -1,1 +1,79 @@
-﻿<!-- Skeleton placeholder -->
+<section class="orders-page">
+  <header class="orders-head">
+    <div>
+      <h1>Orders</h1>
+      @if (canShop()) {
+        <p>Track your purchases, shipment progress, and payment history.</p>
+      } @else {
+        <p>Manage order fulfillment workflow across store operations.</p>
+      }
+    </div>
+    @if (canShop()) {
+      <a class="checkout-btn" routerLink="/orders/checkout">Checkout</a>
+    }
+  </header>
+
+  <section class="toolbar">
+    <input
+      type="text"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+      placeholder="Search by id, status, or payment method"
+    />
+
+    <app-dropdown
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event); onFilterChange()"
+      [options]="statusFilterOptions"
+      placeholder="All statuses"
+    ></app-dropdown>
+
+    <button class="export-btn" type="button" (click)="exportFilteredOrdersCsv()">Export CSV</button>
+  </section>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading orders...</p>
+  } @else if (filteredOrders().length === 0) {
+    <p class="status">No orders found for current filters.</p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Payment</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of filteredOrders(); track trackById($index, order)) {
+            <tr>
+              <td>#{{ order.id }}</td>
+              <td>{{ order.orderDate | date:'mediumDate' }}</td>
+              <td><span class="status-pill status-{{ order.status.toLowerCase() }}">{{ order.status }}</span></td>
+              <td>{{ order.grandTotal | currency:'TRY':'symbol':'1.0-0' }}</td>
+              <td>{{ order.paymentMethod }}</td>
+              <td class="actions">
+                <a [routerLink]="['/orders', order.id]">View</a>
+                @if (canManageOrders()) {
+                  <app-dropdown
+                    [ngModel]="order.status"
+                    (ngModelChange)="updateOrderStatus(order, $event)"
+                    [options]="statusUpdateOptions"
+                  ></app-dropdown>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

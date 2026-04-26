@@ -1,1 +1,170 @@
-﻿/* Skeleton placeholder */
+.orders-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.orders-head h1 {
+  margin: 0;
+  color: var(--text-main);
+}
+
+.orders-head p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+
+.checkout-btn {
+  background: var(--primary-action);
+  color: var(--text-on-action);
+  border-radius: var(--radius-phi);
+  padding: 0.58rem 0.92rem;
+  font-weight: 600;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 220px auto;
+  gap: 0.7rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.toolbar input,
+.toolbar app-dropdown {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.toolbar app-dropdown {
+  min-width: 210px;
+}
+
+.export-btn {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export-btn:hover {
+  border-color: var(--primary-action);
+  color: var(--primary-action);
+}
+
+.banner {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+  color: #92400e;
+}
+
+.status {
+  border: 1px dashed var(--border-light);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--text-muted);
+}
+
+.table-wrap {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: auto;
+  background: var(--bg-primary);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: var(--bg-secondary);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.72rem;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.9rem;
+}
+
+th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+td {
+  color: var(--text-main);
+}
+
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.16);
+  color: #92400e;
+}
+
+.status-processing {
+  background: rgba(56, 189, 248, 0.16);
+  color: #075985;
+}
+
+.status-shipped {
+  background: rgba(129, 140, 248, 0.16);
+  color: #3730a3;
+}
+
+.status-delivered {
+  background: rgba(16, 185, 129, 0.16);
+  color: #065f46;
+}
+
+.status-cancelled {
+  background: rgba(244, 63, 94, 0.16);
+  color: #9f1239;
+}
+
+.actions {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.actions a {
+  color: var(--primary-action);
+  font-weight: 600;
+}
+
+.actions select {
+  display: none;
+}
+
+.actions app-dropdown {
+  width: 170px;
+}
+
+@media (max-width: 880px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+}
