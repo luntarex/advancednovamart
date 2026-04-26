@@ -1,1 +1,60 @@
-﻿<!-- Skeleton placeholder -->
+<aside class="sidebar" [class.sidebar--collapsed]="isCollapsed()">
+  <div class="sidebar-head">
+    <h3>@if (!isCollapsed()) { Navigation } @else { Nav }</h3>
+    <button class="collapse-btn" type="button" (click)="toggleCollapsed()">
+      @if (isCollapsed()) { Expand } @else { Collapse }
+    </button>
+  </div>
+
+  <nav aria-label="Primary navigation">
+    <p class="section-title">@if (!isCollapsed()) { Main } @else { M }</p>
+    <ul>
+      @for (link of commonLinks; track link.path) {
+        <li>
+          <a [routerLink]="link.path" routerLinkActive="active-link">{{ isCollapsed() ? (link.label.charAt(0)) : link.label }}</a>
+        </li>
+      }
+    </ul>
+
+    @if (isLoggedIn() && role() === 'INDIVIDUAL') {
+      <p class="section-title">@if (!isCollapsed()) { Individual } @else { I }</p>
+      <ul>
+        @for (link of individualLinks; track link.path) {
+          <li>
+            <a [routerLink]="link.path" routerLinkActive="active-link">{{ isCollapsed() ? (link.label.charAt(0)) : link.label }}</a>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (isLoggedIn() && role() === 'CORPORATE') {
+      <p class="section-title">@if (!isCollapsed()) { Corporate } @else { C }</p>
+      <ul>
+        @for (link of corporateLinks; track link.path) {
+          <li>
+            <a [routerLink]="link.path" routerLinkActive="active-link">{{ isCollapsed() ? (link.label.charAt(0)) : link.label }}</a>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (isLoggedIn() && role() === 'ADMIN') {
+      <p class="section-title">@if (!isCollapsed()) { Admin } @else { A }</p>
+      <ul>
+        @for (link of adminLinks; track link.path) {
+          <li>
+            <a [routerLink]="link.path" routerLinkActive="active-link">{{ isCollapsed() ? (link.label.charAt(0)) : link.label }}</a>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (!isLoggedIn()) {
+      <p class="section-title">@if (!isCollapsed()) { Account } @else { Acc }</p>
+      <ul>
+        <li><a routerLink="/auth/login" routerLinkActive="active-link"> @if (!isCollapsed()) { Sign In } @else { In } </a></li>
+        <li><a routerLink="/auth/register" routerLinkActive="active-link"> @if (!isCollapsed()) { Create Account } @else { Up } </a></li>
+      </ul>
+    }
+  </nav>
+</aside>
