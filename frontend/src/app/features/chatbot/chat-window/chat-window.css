@@ -185,6 +185,29 @@
   overflow-y: auto;
 }
 
+.sample-prompts {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 0.65rem;
+}
+
+.sample-prompts h4 {
+  margin: 0 0 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.security-scenarios {
+  border-color: rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.04);
+}
+
+.security-scenarios h4 {
+  color: #b91c1c;
+}
+
 .messages {
   flex: 1;
   border: 1px solid var(--border-light);
