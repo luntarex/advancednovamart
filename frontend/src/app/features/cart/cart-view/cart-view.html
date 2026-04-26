@@ -1,1 +1,67 @@
-﻿<!-- Skeleton placeholder -->
+<section class="cart-page">
+  <header class="page-head">
+    <div>
+      <h1>My Cart</h1>
+      <p>Review your selected items before checkout.</p>
+    </div>
+    <a routerLink="/products" class="browse-link">Continue shopping</a>
+  </header>
+
+  @if (infoMessage()) {
+    <p class="banner">{{ infoMessage() }}</p>
+  }
+
+  @if (items().length === 0) {
+    <section class="empty-state">
+      <h3>Your cart is empty</h3>
+      <p>Add products from the catalog to start checkout.</p>
+      <a class="primary-btn" routerLink="/products">Browse Products</a>
+    </section>
+  } @else {
+    <section class="layout">
+      <article class="card">
+        <h3>Items ({{ totalCount() }})</h3>
+        <ul class="item-list">
+          @for (item of items(); track item.productId) {
+            <li>
+              <div class="item-meta">
+                <strong>{{ item.name }}</strong>
+                <p>Product #{{ item.productId }}</p>
+                <span>{{ item.unitPrice | currency:'TRY':'symbol':'1.0-0' }} each</span>
+              </div>
+
+              <div class="item-actions">
+                <div class="qty-controls">
+                  <button type="button" (click)="decrease(item)" aria-label="Decrease quantity">-</button>
+                  <span>{{ item.quantity }}</span>
+                  <button type="button" (click)="increase(item)" aria-label="Increase quantity">+</button>
+                </div>
+                <strong>{{ item.unitPrice * item.quantity | currency:'TRY':'symbol':'1.0-0' }}</strong>
+                <button class="danger-btn" type="button" (click)="remove(item)">Remove</button>
+              </div>
+            </li>
+          }
+        </ul>
+      </article>
+
+      <aside class="card summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <strong>{{ subtotal() | currency:'TRY':'symbol':'1.0-0' }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Shipping</span>
+          <strong>{{ shippingFee() | currency:'TRY':'symbol':'1.0-0' }}</strong>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <strong>{{ total() | currency:'TRY':'symbol':'1.0-0' }}</strong>
+        </div>
+
+        <a class="primary-btn" routerLink="/orders/checkout">Proceed to Checkout</a>
+        <button class="ghost-btn" type="button" (click)="clearCart()">Clear Cart</button>
+      </aside>
+    </section>
+  }
+</section>
