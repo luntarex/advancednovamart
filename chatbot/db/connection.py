@@ -1,9 +1,13 @@
 """
-Database connection module.
-Connects to the same MySQL database that Spring Boot uses.
+Database helpers for the chatbot service.
 """
-import os
+from __future__ import annotations
+
 import json
+import os
+from decimal import Decimal
+from datetime import date, datetime
+
 import mysql.connector
 from dotenv import load_dotenv
 
@@ -11,7 +15,6 @@ load_dotenv()
 
 
 def get_connection():
-    """Create a new MySQL connection using .env credentials."""
     return mysql.connector.connect(
         host=os.getenv("DB_HOST", "localhost"),
         port=int(os.getenv("DB_PORT", 3306)),
@@ -21,16 +24,20 @@ def get_connection():
     )
 
 
-def execute_query(sql: str) -> str:
-    """
-    Execute a SQL query and return results as a JSON string.
-    Only SELECT queries are allowed (safety measure).
-    """
-    # Safety: block any destructive queries
-    sql_upper = sql.strip().upper()
-    if not sql_upper.startswith("SELECT"):
-        return json.dumps({"error": "Only SELECT queries are allowed."})
+def _serialize_value(value):
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)
 
+
+def execute_query(sql: str) -> tuple[str, str]:
+    """
+    Executes SQL and returns (json_result, error_message).
+    """
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -39,22 +46,18 @@ def execute_query(sql: str) -> str:
         cursor.close()
         conn.close()
 
-        # Convert any non-serializable types (like Decimal, datetime) to string
+        normalized_rows: list[dict] = []
         for row in rows:
-            for key, value in row.items():
-                if not isinstance(value, (str, int, float, bool, type(None))):
-                    row[key] = str(value)
+            normalized_rows.append({key: _serialize_value(value) for key, value in row.items()})
 
-        return json.dumps(rows, ensure_ascii=False)
-
-    except Exception as e:
-        return json.dumps({"error": str(e)})
+        return json.dumps(normalized_rows, ensure_ascii=False), ""
+    except Exception as exc:  # pragma: no cover - runtime DB errors are expected in retries
+        return "", str(exc)
 
 
 def get_schema() -> str:
     """
-    Read the database schema (table names + column names).
-    This is sent to the LLM so it knows what tables/columns exist.
+    Return table/column schema description for prompting.
     """
     try:
         conn = get_connection()
@@ -62,7 +65,7 @@ def get_schema() -> str:
         cursor.execute("SHOW TABLES")
         tables = [row[0] for row in cursor.fetchall()]
 
-        schema_parts = []
+        schema_parts: list[str] = []
         for table in tables:
             cursor.execute(f"DESCRIBE {table}")
             columns = cursor.fetchall()
@@ -72,6 +75,5 @@ def get_schema() -> str:
         cursor.close()
         conn.close()
         return "\n\n".join(schema_parts)
-
-    except Exception as e:
-        return f"Error reading schema: {e}"
+    except Exception as exc:  # pragma: no cover
+        return f"Error reading schema: {exc}"

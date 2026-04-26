@@ -2,11 +2,19 @@ package com.novamart.service;
 
 import com.novamart.dto.request.ChatRequest;
 import com.novamart.dto.response.ChatResponse;
+import com.novamart.entity.Store;
+import com.novamart.entity.User;
+import com.novamart.repository.StoreRepository;
+import com.novamart.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -14,32 +22,40 @@ import java.util.Map;
 public class ChatService {
 
     private static final String PYTHON_CHATBOT_URL = "http://localhost:8000/ask";
+    private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
     /**
      * Forwards the chat question to the Python LangGraph service
      * and returns the response to the Angular frontend.
      */
-    public ChatResponse ask(ChatRequest request) {
+    public ChatResponse ask(ChatRequest request, Authentication authentication) {
         try {
             RestTemplate restTemplate = new RestTemplate();
+            Long userId = getUserId(authentication);
+            String role = resolveRole(authentication, userId);
+            List<Long> allowedStoreIds = resolveAllowedStoreIds(role, userId);
+            Long activeStoreId = resolveActiveStoreId(request, allowedStoreIds);
 
             // Build the request body for the Python service
-            Map<String, String> body = new HashMap<>();
+            Map<String, Object> body = new HashMap<>();
             body.put("question", request.getQuestion());
-            if (request.getSessionId() != null) {
-                body.put("session_id", request.getSessionId());
-            }
+            body.put("session_id", request.getSessionId());
+            body.put("user_id", userId);
+            body.put("role", role);
+            body.put("active_store_id", activeStoreId);
+            body.put("allowed_store_ids", allowedStoreIds);
 
             // Call the Python FastAPI service
             @SuppressWarnings("unchecked")
-            Map<String, String> result = restTemplate.postForObject(
+            Map<String, Object> result = restTemplate.postForObject(
                     PYTHON_CHATBOT_URL, body, Map.class
             );
 
             if (result != null) {
                 return ChatResponse.builder()
-                        .answer(result.getOrDefault("answer", "No response from AI service."))
-                        .visualizationCode(result.getOrDefault("visualization_code", ""))
+                        .answer(String.valueOf(result.getOrDefault("answer", "No response from AI service.")))
+                        .visualizationCode(String.valueOf(result.getOrDefault("visualization_code", "")))
                         .build();
             }
 
@@ -53,5 +69,63 @@ public class ChatService {
         return ChatResponse.builder()
                 .answer("Unable to process your question.")
                 .build();
+    }
+
+    private Long getUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long userId) {
+            return userId;
+        }
+        if (principal instanceof String principalText) {
+            return Long.parseLong(principalText);
+        }
+        throw new IllegalStateException("Unsupported authentication principal type");
+    }
+
+    private String resolveRole(Authentication authentication, Long userId) {
+        if (authentication != null && authentication.getAuthorities() != null) {
+            for (GrantedAuthority authority : authentication.getAuthorities()) {
+                String role = authority.getAuthority();
+                if (role != null && role.startsWith("ROLE_")) {
+                    return role.substring("ROLE_".length());
+                }
+            }
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        return user.getRoleType().name();
+    }
+
+    private List<Long> resolveAllowedStoreIds(String role, Long userId) {
+        if (!"CORPORATE".equalsIgnoreCase(role)) {
+            return List.of();
+        }
+
+        List<Store> stores = storeRepository.findByOwnerId(userId);
+        if (stores == null || stores.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> ids = new ArrayList<>();
+        for (Store store : stores) {
+            if (store.getId() != null) {
+                ids.add(store.getId());
+            }
+        }
+        return ids;
+    }
+
+    private Long resolveActiveStoreId(ChatRequest request, List<Long> allowedStoreIds) {
+        if (request.getStoreId() != null) {
+            if (allowedStoreIds.isEmpty() || allowedStoreIds.contains(request.getStoreId())) {
+                return request.getStoreId();
+            }
+        }
+
+        if (!allowedStoreIds.isEmpty()) {
+            return allowedStoreIds.get(0);
+        }
+        return null;
     }
 }

@@ -11,6 +11,7 @@ from agents.sql_agent import sql_agent, execute_sql
 from agents.error_agent import error_agent
 from agents.analysis import analysis_agent
 from agents.visualization import visualization_agent
+from security import sanitize_text
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -42,9 +43,18 @@ def after_execute_sql(state: dict) -> str:
             return "error_agent"
         else:
             # Give up after 3 retries
-            return END
+            return "final_error"
     else:
         return "analysis_agent"
+
+
+def final_error_agent(state: dict) -> dict:
+    return {
+        "final_answer": (
+            "Sorgu guvenlik veya dogrulama kontrollerinden gecemedi. "
+            f"Detay: {sanitize_text(state.get('error', 'unknown error'))}"
+        ),
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -72,6 +82,7 @@ def build_graph():
     graph.add_node("error_agent", error_agent)
     graph.add_node("analysis_agent", analysis_agent)
     graph.add_node("visualization_agent", visualization_agent)
+    graph.add_node("final_error", final_error_agent)
 
     # 3. Set the entry point
     graph.set_entry_point("guardrails")
@@ -91,6 +102,7 @@ def build_graph():
     # 8. Analysis → Visualization → END
     graph.add_edge("analysis_agent", "visualization_agent")
     graph.add_edge("visualization_agent", END)
+    graph.add_edge("final_error", END)
 
     # 9. Compile the graph (finalize it, make it runnable)
     return graph.compile()

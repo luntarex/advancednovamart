@@ -1,8 +1,5 @@
 """
-AgentState — The shared clipboard that all agents read and write to.
-
-Think of this as a dictionary that travels through the pipeline.
-Each agent reads what it needs and adds its contribution.
+Shared state schema for the LangGraph workflow.
 """
 from typing import TypedDict
 
@@ -10,21 +7,28 @@ from typing import TypedDict
 class AgentState(TypedDict):
     """State shared across all agents in the graph."""
 
-    # --- Input ---
-    question: str           # The user's natural language question
+    # User input
+    question: str
+    session_id: str
 
-    # --- Guardrails ---
-    is_in_scope: bool       # True if the question is about our e-commerce data
-    scope_type: str         # "greeting", "in_scope", or "out_of_scope"
+    # Auth/scope context (sent by Spring Boot)
+    user_id: int
+    role: str
+    active_store_id: int | None
+    allowed_store_ids: list[int]
 
-    # --- SQL Generation ---
-    sql_query: str          # The generated SQL query
-    query_result: str       # The raw result from MySQL (as JSON string)
+    # Guardrails
+    is_in_scope: bool
+    scope_type: str
+    blocked_reason: str
+    is_security_violation: bool
 
-    # --- Error Handling ---
-    error: str              # Error message if SQL execution fails
-    iteration_count: int    # How many times we've retried (max 3)
+    # SQL generation/execution
+    sql_query: str
+    query_result: str
+    error: str
+    iteration_count: int
 
-    # --- Output ---
-    final_answer: str       # Human-readable explanation of the results
-    visualization_code: str  # Plotly code for charts (empty if no chart needed)
+    # Output
+    final_answer: str
+    visualization_code: str
