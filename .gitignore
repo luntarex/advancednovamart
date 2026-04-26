@@ -29,3 +29,17 @@ target/
 .Trashes
 ehthumbs.db
 Thumbs.db
+# Node.js
+**/node_modules/
+
+# Build outputs
+backend/target/
+frontend/dist/
+frontend/.angular/cache/
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Environment files
+**/.env

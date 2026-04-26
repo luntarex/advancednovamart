@@ -10,4 +10,6 @@ public class ChatRequest {
     private String question;
 
     private String sessionId;
+
+    private Long storeId;
 }

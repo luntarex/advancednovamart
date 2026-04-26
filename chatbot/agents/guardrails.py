@@ -1,3 +1,104 @@
-﻿class Guardrails:
-    pass
+"""
+Guardrails agent.
+- Blocks prompt injection/prompt leakage attempts
+- Classifies greeting / in-scope / out-of-scope
+"""
+from __future__ import annotations
 
+import os
+from langchain_openai import ChatOpenAI
+from security import detect_prompt_attack
+
+GUARDRAIL_MODEL = os.getenv("OPENAI_GUARDRAIL_MODEL", "gpt-4.1-nano")
+_llm: ChatOpenAI | None = None
+
+DOMAIN_HINTS = (
+    "product", "order", "sale", "revenue", "customer", "shipment", "review",
+    "category", "inventory", "stock", "store", "checkout", "analytics", "dashboard",
+)
+GREETINGS = (
+    "hello", "hi", "hey", "good morning", "good afternoon", "good evening", "selam", "merhaba",
+)
+
+CLASSIFY_PROMPT = """You are a strict classifier for an e-commerce analytics chatbot.
+
+Return exactly one of these labels:
+- greeting
+- in_scope
+- out_of_scope
+
+Question: {question}
+"""
+
+
+def _cheap_rule_classify(question: str) -> str | None:
+    q = (question or "").strip().lower()
+    if not q:
+        return "out_of_scope"
+    if any(token in q for token in GREETINGS) and len(q.split()) <= 8:
+        return "greeting"
+    if any(token in q for token in DOMAIN_HINTS):
+        return "in_scope"
+    return None
+
+
+def _get_llm() -> ChatOpenAI:
+    global _llm
+    if _llm is None:
+        _llm = ChatOpenAI(model=GUARDRAIL_MODEL, temperature=0)
+    return _llm
+
+
+def guardrails_agent(state: dict) -> dict:
+    question = state["question"]
+
+    is_attack, reason = detect_prompt_attack(question)
+    if is_attack:
+        return {
+            "scope_type": "security_block",
+            "is_in_scope": False,
+            "is_security_violation": True,
+            "blocked_reason": reason,
+            "final_answer": (
+                "Bu istek guvenlik politikalarina takildi. "
+                "Yalnizca rolunuze uygun e-ticaret analiz sorularini yanitlayabilirim."
+            ),
+        }
+
+    rule_result = _cheap_rule_classify(question)
+    if rule_result is None:
+        response = _get_llm().invoke(CLASSIFY_PROMPT.format(question=question))
+        classification = (response.content or "").strip().lower()
+    else:
+        classification = rule_result
+
+    if classification == "greeting":
+        return {
+            "scope_type": "greeting",
+            "is_in_scope": False,
+            "is_security_violation": False,
+            "blocked_reason": "",
+            "final_answer": (
+                "Merhaba. NovaMart AI Veri Asistani olarak satis, siparis, stok, musteri ve sevkiyat "
+                "analizlerinde yardimci olabilirim."
+            ),
+        }
+
+    if classification == "in_scope":
+        return {
+            "scope_type": "in_scope",
+            "is_in_scope": True,
+            "is_security_violation": False,
+            "blocked_reason": "",
+        }
+
+    return {
+        "scope_type": "out_of_scope",
+        "is_in_scope": False,
+        "is_security_violation": False,
+        "blocked_reason": "",
+        "final_answer": (
+            "Bu asistan yalnizca e-ticaret verileri icin kullanilir. "
+            "Ornek: 'Bu ay en cok satan 5 urun nedir?'"
+        ),
+    }

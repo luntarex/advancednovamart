@@ -22,6 +22,26 @@
 
     <div class="chat-layout">
       <section class="chat-main card">
+        <section class="sample-prompts">
+          <h4>Ornek sorular — tiklayarak dene:</h4>
+          <div class="prompt-list">
+            @for (prompt of quickPrompts(); track prompt) {
+              <button type="button" (click)="sendPrompt(prompt)" [disabled]="isSending()">{{ prompt }}</button>
+            }
+          </div>
+        </section>
+
+        @if (securityPrompts().length > 0) {
+          <section class="sample-prompts security-scenarios">
+            <h4>Guvenlik senaryolari:</h4>
+            <div class="prompt-list">
+              @for (prompt of securityPrompts(); track prompt) {
+                <button type="button" (click)="sendPrompt(prompt)" [disabled]="isSending()">{{ prompt }}</button>
+              }
+            </div>
+          </section>
+        }
+
         <div class="messages" aria-live="polite">
           @for (message of messages(); track trackByMessageId($index, message)) {
             <article class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
