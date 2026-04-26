@@ -1,3 +1,10 @@
-﻿package com.novamart.enums;
+package com.novamart.enums;
 
-public enum OrderStatus { PLACEHOLDER }
+public enum OrderStatus {
+    CART,
+    PENDING,
+    PROCESSING,
+    SHIPPED,
+    DELIVERED,
+    CANCELLED
+}

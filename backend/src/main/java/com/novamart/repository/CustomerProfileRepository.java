@@ -1,3 +1,14 @@
-﻿package com.novamart.repository;
+package com.novamart.repository;
 
-public interface CustomerProfileRepository {}
+import com.novamart.entity.CustomerProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CustomerProfileRepository extends JpaRepository<CustomerProfile, Long> {
+
+    Optional<CustomerProfile> findByUserId(Long userId);
+
+    List<CustomerProfile> findByUserIdIn(List<Long> userIds);
+}

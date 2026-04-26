@@ -1,3 +1,11 @@
-﻿package com.novamart.repository;
+package com.novamart.repository;
 
-public interface StoreRepository {}
+import com.novamart.entity.Store;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface StoreRepository extends JpaRepository<Store, Long> {
+
+    List<Store> findByOwnerId(Long ownerId);
+}
