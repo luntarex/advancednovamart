@@ -1,1 +1,161 @@
-﻿<!-- Skeleton placeholder -->
+<header class="navbar" #navbarRef>
+  <div class="navbar-top">
+    <nav class="top-links">
+      <ul>
+        <li><a routerLink="/products?sale=true">Deals</a></li>
+        <li><a routerLink="/products?sort=newest">New Arrivals</a></li>
+
+        @if (auth.isLoggedIn()) {
+          <li><a routerLink="/orders">My Orders</a></li>
+        }
+
+        @if (auth.getUserRole() === 'CORPORATE') {
+          <li class="highlight"><a routerLink="/dashboard/corporate">Corporate Portal</a></li>
+        }
+
+        @if (auth.getUserRole() === 'ADMIN') {
+          <li class="highlight"><a routerLink="/dashboard/admin">Platform Dashboard</a></li>
+        }
+
+        @if (auth.getUserRole() === 'ADMIN') {
+          <li class="highlight"><a routerLink="/admin/users">Admin Panel</a></li>
+        }
+
+        @if (!auth.isLoggedIn()) {
+          <li><a routerLink="/auth/register">Sell on NovaMart</a></li>
+        }
+      </ul>
+    </nav>
+  </div>
+
+  <div class="navbar-main">
+    <a class="navbar-brand" routerLink="/">
+      <span class="brand-name">NovaMart</span>
+      <span class="brand-tagline">Shop Smarter</span>
+    </a>
+
+    <div class="navbar-search">
+      <div class="search-box">
+        <img src="assets/icons/search.svg" class="search-icon-left" alt="Search">
+        <input
+          #searchInput
+          class="search-input"
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keydown)="onSearchKeyDown($event)"
+          placeholder="Search products, brands or categories"
+        />
+        <button class="search-btn" (click)="onSearch()">Search</button>
+      </div>
+    </div>
+
+    <div class="navbar-actions">
+      <div class="dropdown-container">
+        <button class="action-btn location-btn" (click)="toggleLocationDropdown()">
+          <img src="assets/icons/map-pin.svg" class="action-icon" alt="Location">
+          <div class="action-btn-text">
+            <span class="action-btn-label">Location</span>
+            <span class="action-btn-value">{{ selectedCity }}</span>
+          </div>
+        </button>
+
+        @if (isLocationDropdownOpen) {
+          <div class="location-dropdown location-panel">
+            <div class="location-header">
+              <h4>Select Delivery Address</h4>
+              <p>Pick one of your saved addresses to update checkout city instantly.</p>
+            </div>
+
+            @if (!auth.isLoggedIn()) {
+              <p class="location-empty">Sign in to save addresses and choose your delivery location.</p>
+              <button class="location-save-btn" type="button" routerLink="/auth/login">Sign In</button>
+            } @else if (savedAddresses.length === 0) {
+              <p class="location-empty">No saved addresses yet. Add one in checkout.</p>
+              <button class="location-save-btn" type="button" (click)="goToAddressManagement()">Add Address</button>
+            } @else {
+              <ul class="location-address-list">
+                @for (address of savedAddresses; track address.id) {
+                  <li>
+                    <button
+                      type="button"
+                      class="location-address-btn"
+                      [class.active]="isDefaultAddress(address)"
+                      (click)="selectLocationAddress(address.id)"
+                    >
+                      <strong>
+                        {{ address.city }}, {{ address.district }}
+                        @if (isDefaultAddress(address)) {
+                          <span class="badge">Default</span>
+                        }
+                      </strong>
+                      <span>{{ address.addressLine }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+
+              <button class="location-save-btn" type="button" (click)="goToAddressManagement()">Manage Addresses</button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="dropdown-container">
+        @if (!auth.isLoggedIn()) {
+          <button class="action-btn login-btn" routerLink="/auth/login">
+            <img src="assets/icons/user.svg" class="action-icon" alt="User">
+            <div class="action-btn-text">
+              <span class="action-btn-label">or register</span>
+              <span class="action-btn-value">Sign In</span>
+            </div>
+          </button>
+        } @else {
+          <button class="action-btn login-btn" (click)="toggleUserDropdown()">
+            <img src="assets/icons/user.svg" class="action-icon" alt="User">
+            <div class="action-btn-text">
+              <span class="action-btn-label">My Account</span>
+              <span class="action-btn-value">Welcome</span>
+            </div>
+          </button>
+        }
+
+        @if (isUserDropdownOpen) {
+          <div class="user-dropdown">
+            <a routerLink="/profile">Profile</a>
+            <a routerLink="/orders">My Orders</a>
+
+            @if (auth.getUserRole() === 'INDIVIDUAL') {
+              <a routerLink="/dashboard/individual">My Dashboard</a>
+            }
+
+            @if (auth.getUserRole() === 'CORPORATE') {
+              <a routerLink="/dashboard/corporate">Store Dashboard</a>
+              <a routerLink="/analytics">Analytics</a>
+            }
+
+            @if (auth.getUserRole() === 'ADMIN') {
+              <a routerLink="/admin/users">Manage Users</a>
+              <a routerLink="/admin/stores">Manage Stores</a>
+              <a routerLink="/analytics">Platform Analytics</a>
+            }
+            <div class="dropdown-divider"></div>
+            <button (click)="logout()">Logout</button>
+          </div>
+        }
+      </div>
+
+      <button class="action-btn cart-btn" (click)="goToCart()">
+        <div class="cart-icon-wrapper">
+          <img src="assets/icons/shopping-cartsvg.svg" class="action-icon" alt="Cart">
+          @if (cartCount > 0) {
+            <span class="cart-count">{{ cartCount }}</span>
+          }
+        </div>
+        <div class="action-btn-text">
+          <span class="action-btn-label">My</span>
+          <span class="action-btn-value">Cart</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</header>

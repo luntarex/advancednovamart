@@ -1,1 +1,40 @@
-﻿<!-- Skeleton placeholder -->
+<footer class="footer">
+  <div class="footer-grid">
+    <section class="brand">
+      <h3>NovaMart</h3>
+      <p>Trusted shopping for individuals, businesses, and enterprise teams.</p>
+    </section>
+
+    <nav aria-label="Quick links">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a routerLink="/products">Products</a></li>
+        <li><a routerLink="/orders">Orders</a></li>
+        <li><a routerLink="/profile">Profile</a></li>
+      </ul>
+    </nav>
+
+    <nav aria-label="Business links">
+      <h4>Business</h4>
+      <ul>
+        <li><a routerLink="/dashboard">Dashboard</a></li>
+        <li><a routerLink="/analytics">Analytics</a></li>
+        <li><a routerLink="/shipments">Shipments</a></li>
+      </ul>
+    </nav>
+
+    <nav aria-label="Admin links">
+      <h4>Admin</h4>
+      <ul>
+        <li><a routerLink="/admin/users">Manage Users</a></li>
+        <li><a routerLink="/admin/stores">Manage Stores</a></li>
+        <li><a routerLink="/reviews">Reviews</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <span>&copy; {{ year }} NovaMart. All rights reserved.</span>
+    <a routerLink="/chatbot">Need help? Chat with support</a>
+  </div>
+</footer>
