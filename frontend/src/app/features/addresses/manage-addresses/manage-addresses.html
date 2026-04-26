@@ -1,1 +1,76 @@
-﻿<!-- Skeleton placeholder -->
+<section class="addresses-page">
+  <header class="addresses-head">
+    <h1>My Addresses</h1>
+    <p>Add and manage delivery addresses for faster checkout.</p>
+  </header>
+
+  @if (role() !== 'INDIVIDUAL') {
+    <p class="status">Address management is primarily for individual customer checkout.</p>
+  }
+
+  @if (message()) {
+    <p class="banner">{{ message() }}</p>
+  }
+
+  <div class="addresses-layout">
+    <form [formGroup]="form" (ngSubmit)="saveAddress()" novalidate class="card">
+      <h3>Add New Address</h3>
+
+      <label for="addressLine">Address</label>
+      <input id="addressLine" type="text" formControlName="addressLine" placeholder="Street and building details" />
+      @if (form.controls.addressLine.touched && form.controls.addressLine.invalid) {
+        <small>Please enter a full delivery address.</small>
+      }
+
+      <div class="row">
+        <div>
+          <label for="city">City</label>
+          <input id="city" type="text" formControlName="city" />
+        </div>
+        <div>
+          <label for="district">District</label>
+          <input id="district" type="text" formControlName="district" />
+        </div>
+      </div>
+
+      <label for="phone">Phone</label>
+      <input id="phone" type="text" formControlName="phone" placeholder="+90..." />
+
+      <button class="primary-btn" type="submit">Save Address</button>
+    </form>
+
+    <section class="card">
+      <h3>Saved Addresses</h3>
+
+      @if (savedAddresses().length === 0) {
+        <p class="empty">No addresses saved yet.</p>
+      } @else {
+        <ul class="address-list">
+          @for (address of savedAddresses(); track trackById($index, address)) {
+            <li>
+              <div
+                class="address-card"
+                [class.active]="isDefaultAddress(address)"
+                (click)="chooseAddress(address.id)"
+                tabindex="0"
+              >
+                <div class="title-row">
+                  <strong>{{ address.city }}, {{ address.district }}</strong>
+                  <div class="title-actions">
+                    @if (isDefaultAddress(address)) {
+                      <span class="badge">Default</span>
+                    }
+                    <button type="button" class="remove-btn" (click)="$event.stopPropagation(); removeAddress(address.id)">Remove</button>
+                  </div>
+                </div>
+                <p>{{ address.addressLine }}</p>
+                <span>{{ address.phone }}</span>
+                <small>Added: {{ address.createdAt | date:'dd MMM yyyy, HH:mm' }}</small>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</section>
