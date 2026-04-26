@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Product } from '../../../core/models/product.model';
 import { AuthService } from '../../../core/services/auth/auth.service';
+import { CartService } from '../../../core/services/cart/cart.service';
 import { ProductService } from '../../../core/services/prodcut/product.service';
 import { DropdownComponent, DropdownOption } from '../../../shared/components/dropdown/dropdown';
 
@@ -14,10 +15,13 @@ import { DropdownComponent, DropdownOption } from '../../../shared/components/dr
   styleUrl: './product-list.css',
 })
 export class ProductList {
+  readonly fallbackImageUrl = 'https://dummyimage.com/640x480/f3f4f6/6b7280&text=No+Image';
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly productService = inject(ProductService);
+  private readonly cartService = inject(CartService);
 
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
@@ -25,6 +29,7 @@ export class ProductList {
 
   readonly searchTerm = signal('');
   readonly sortBy = signal<'newest' | 'priceAsc' | 'priceDesc' | 'name'>('newest');
+  readonly selectedCategory = signal<'ALL' | number>('ALL');
 
   readonly sortOptions: DropdownOption[] = [
     { label: 'Newest Arrivals', value: 'newest' },
@@ -35,20 +40,48 @@ export class ProductList {
   readonly saleOnly = signal(false);
 
   readonly products = signal<Product[]>([]);
+  readonly categoryOptions = computed<DropdownOption[]>(() => {
+    const categoryMap = new Map<number, string>();
+    this.products().forEach((product) => {
+      if (!Number.isFinite(product.categoryId)) {
+        return;
+      }
+      const categoryId = Number(product.categoryId);
+      const categoryName = (product.categoryName ?? '').trim() || `Category #${categoryId}`;
+      if (!categoryMap.has(categoryId)) {
+        categoryMap.set(categoryId, categoryName);
+      }
+    });
+
+    const categories = Array.from(categoryMap.entries()).sort((a, b) =>
+      a[1].localeCompare(b[1], undefined, { sensitivity: 'base' }),
+    );
+
+    return [
+      { label: 'All Categories', value: 'ALL' },
+      ...categories.map(([categoryId, categoryName]) => ({
+        label: categoryName,
+        value: categoryId,
+      })),
+    ];
+  });
 
   readonly filteredProducts = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
     const saleOnly = this.saleOnly();
     const sortBy = this.sortBy();
+    const selectedCategory = this.selectedCategory();
 
     let data = this.products().filter((product) => {
       const matchesQuery =
         query.length === 0 ||
         product.name.toLowerCase().includes(query) ||
         product.sku.toLowerCase().includes(query);
+      const matchesCategory =
+        selectedCategory === 'ALL' || Number(product.categoryId ?? 0) === selectedCategory;
 
       const hasSale = !saleOnly || product.unitPrice < 1000;
-      return matchesQuery && hasSale;
+      return matchesQuery && matchesCategory && hasSale;
     });
 
     if (sortBy === 'priceAsc') {
@@ -83,6 +116,13 @@ export class ProductList {
       }
 
       this.saleOnly.set(params.get('sale') === 'true');
+
+      const categoryParam = Number(params.get('category'));
+      if (Number.isFinite(categoryParam) && categoryParam > 0) {
+        this.selectedCategory.set(categoryParam);
+      } else {
+        this.selectedCategory.set('ALL');
+      }
     });
 
     this.loadProducts();
@@ -98,8 +138,8 @@ export class ProductList {
         this.isLoading.set(false);
       },
       error: () => {
-        this.products.set(this.getFallbackProducts());
-        this.errorMessage.set('Live product data is unavailable. Showing sample products.');
+        this.products.set([]);
+        this.errorMessage.set('Product data could not be loaded from database.');
         this.isLoading.set(false);
       },
     });
@@ -122,6 +162,11 @@ export class ProductList {
       queryParams['sale'] = 'true';
     }
 
+    const category = this.selectedCategory();
+    if (category !== 'ALL') {
+      queryParams['category'] = String(category);
+    }
+
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
@@ -131,6 +176,7 @@ export class ProductList {
   clearFilters(): void {
     this.searchTerm.set('');
     this.sortBy.set('newest');
+    this.selectedCategory.set('ALL');
     this.saleOnly.set(false);
     this.onFilterChange();
   }
@@ -144,68 +190,16 @@ export class ProductList {
       return;
     }
 
-    const cart = localStorage.getItem('cart');
-    const cartItems = cart ? JSON.parse(cart) : [];
-    const existingItem = cartItems.find((item: { productId: number }) => item.productId === product.id);
-
-    if (existingItem) {
-      existingItem.quantity = Math.min(existingItem.quantity + 1, product.stockQuantity);
-    } else {
-      cartItems.push({
-        productId: product.id,
-        name: product.name,
-        unitPrice: product.unitPrice,
-        quantity: 1,
-      });
-    }
-
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    window.dispatchEvent(new CustomEvent('cart-updated'));
-    this.successMessage.set(`${product.name} added to cart.`);
+    this.cartService.addItem(product.id, 1).subscribe({
+      next: () => this.successMessage.set(`${product.name} added to cart.`),
+      error: () => this.successMessage.set('Could not add product to cart.'),
+    });
   }
 
-  private getFallbackProducts(): Product[] {
-    return [
-      {
-        id: 101,
-        name: 'Nova Wireless Earbuds',
-        sku: 'NV-AUD-101',
-        description: 'Noise isolation with all-day battery.',
-        unitPrice: 849,
-        stockQuantity: 34,
-        categoryId: 1,
-        storeId: 1,
-      },
-      {
-        id: 102,
-        name: 'Pulse Mechanical Keyboard',
-        sku: 'NV-KEY-204',
-        description: 'Compact RGB keyboard for productivity and gaming.',
-        unitPrice: 1299,
-        stockQuantity: 18,
-        categoryId: 2,
-        storeId: 1,
-      },
-      {
-        id: 103,
-        name: 'Terra Smart Water Bottle',
-        sku: 'NV-LIF-550',
-        description: 'Tracks hydration and syncs with your mobile app.',
-        unitPrice: 579,
-        stockQuantity: 0,
-        categoryId: 3,
-        storeId: 2,
-      },
-      {
-        id: 104,
-        name: 'AeroFit Running Shoes',
-        sku: 'NV-SPT-702',
-        description: 'Lightweight daily trainers with reinforced heel support.',
-        unitPrice: 1499,
-        stockQuantity: 42,
-        categoryId: 4,
-        storeId: 2,
-      },
-    ];
+  onProductImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.src = this.fallbackImageUrl;
+    }
   }
 }

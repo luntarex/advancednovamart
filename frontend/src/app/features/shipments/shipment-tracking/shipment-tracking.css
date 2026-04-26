@@ -86,7 +86,8 @@
   border-radius: 12px;
   background: var(--bg-primary);
   padding: 0.95rem;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.7rem;
 }
 

@@ -1,0 +1,123 @@
+<section class="home-page">
+  <section class="hero">
+    <div class="hero-content">
+      <span class="hero-chip">NovaMart Marketplace</span>
+      <h1>{{ heroTitle() }}</h1>
+      <p>{{ heroSubtitle() }}</p>
+      <div class="hero-actions">
+        <a class="primary-btn" routerLink="/products">Start Shopping</a>
+        <a class="ghost-btn" routerLink="/products" [queryParams]="{ sort: 'newest' }">New Arrivals</a>
+      </div>
+    </div>
+
+    <div class="hero-metrics">
+      <article>
+        <strong>{{ products().length }}</strong>
+        <span>Live Products</span>
+      </article>
+      <article>
+        <strong>{{ categoryShowcases().length }}</strong>
+        <span>Active Categories</span>
+      </article>
+      <article>
+        <strong>{{ topSellers().length }}</strong>
+        <span>Top Picks</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="trust-strip">
+    <span>Fast delivery planning</span>
+    <span>Secure payment methods</span>
+    <span>Store-backed customer support</span>
+    <span>Address-based personalized shopping</span>
+  </section>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading home feed...</p>
+  } @else {
+    <section class="category-grid">
+      @for (category of categoryShowcases(); track category.id) {
+        <a class="category-card" routerLink="/products" [queryParams]="{ category: category.id }">
+          <img [src]="category.coverImage" (error)="onImageError($event)" [alt]="category.name" loading="lazy" />
+          <div class="overlay">
+            <strong>{{ category.name }}</strong>
+            <span>{{ category.count }} products</span>
+          </div>
+        </a>
+      }
+    </section>
+
+    <section class="shelf">
+      <header>
+        <h2>Top Sellers</h2>
+        <a routerLink="/products">See all</a>
+      </header>
+      <div class="shelf-row">
+        @for (product of topSellers(); track product.id) {
+          <a class="item-card" [routerLink]="['/products', product.id]">
+            <img [src]="product.imageUrl || fallbackImageUrl" (error)="onImageError($event)" [alt]="product.name" loading="lazy" />
+            <h3>{{ product.name }}</h3>
+            <p>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</p>
+          </a>
+        }
+      </div>
+    </section>
+
+    <section class="double-shelf">
+      <article class="shelf-block">
+        <header>
+          <h2>Best Deals</h2>
+          <a routerLink="/products" [queryParams]="{ sort: 'priceAsc' }">See all deals</a>
+        </header>
+        <div class="shelf-row compact">
+          @for (product of bestDeals(); track product.id) {
+            <a class="item-card" [routerLink]="['/products', product.id]">
+              <img [src]="product.imageUrl || fallbackImageUrl" (error)="onImageError($event)" [alt]="product.name" loading="lazy" />
+              <h3>{{ product.name }}</h3>
+              <p>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</p>
+            </a>
+          }
+        </div>
+      </article>
+
+      <article class="shelf-block">
+        <header>
+          <h2>Premium Selection</h2>
+          <a routerLink="/products" [queryParams]="{ sort: 'priceDesc' }">Explore premium</a>
+        </header>
+        <div class="shelf-row compact">
+          @for (product of premiumPicks(); track product.id) {
+            <a class="item-card" [routerLink]="['/products', product.id]">
+              <img [src]="product.imageUrl || fallbackImageUrl" (error)="onImageError($event)" [alt]="product.name" loading="lazy" />
+              <h3>{{ product.name }}</h3>
+              <p>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</p>
+            </a>
+          }
+        </div>
+      </article>
+    </section>
+
+    @for (rail of categoryRails(); track rail.id) {
+      <section class="shelf">
+        <header>
+          <h2>{{ rail.name }}</h2>
+          <a routerLink="/products" [queryParams]="{ category: rail.id }">View category</a>
+        </header>
+        <div class="shelf-row">
+          @for (product of rail.products; track product.id) {
+            <a class="item-card" [routerLink]="['/products', product.id]">
+              <img [src]="product.imageUrl || fallbackImageUrl" (error)="onImageError($event)" [alt]="product.name" loading="lazy" />
+              <h3>{{ product.name }}</h3>
+              <p>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</p>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  }
+</section>

@@ -29,6 +29,12 @@
       [options]="sortOptions"
     ></app-dropdown>
 
+    <app-dropdown
+      [ngModel]="selectedCategory()"
+      (ngModelChange)="selectedCategory.set($event); onFilterChange()"
+      [options]="categoryOptions()"
+    ></app-dropdown>
+
     <label class="sale-toggle">
       <input type="checkbox" [ngModel]="saleOnly()" (ngModelChange)="saleOnly.set($event); onFilterChange()" />
       On Sale
@@ -53,6 +59,14 @@
     <div class="product-grid">
       @for (product of filteredProducts(); track trackById($index, product)) {
         <article class="product-card" tabindex="0" [routerLink]="['/products', product.id]">
+          <img
+            class="product-image"
+            [src]="product.imageUrl || fallbackImageUrl"
+            (error)="onProductImageError($event)"
+            [alt]="product.name"
+            loading="lazy"
+          />
+
           <div class="card-head">
             <h3>{{ product.name }}</h3>
             <span class="sku">{{ product.sku }}</span>
@@ -61,7 +75,7 @@
           <p class="description">{{ product.description || 'No description provided.' }}</p>
 
           <div class="card-meta">
-            <strong>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</strong>
+            <p>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</p>
             <span [class.out-of-stock]="product.stockQuantity === 0">
               @if (product.stockQuantity === 0) { Out of stock } @else { Stock: {{ product.stockQuantity }} }
             </span>
