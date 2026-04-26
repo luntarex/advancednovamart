@@ -1,3 +1,12 @@
-﻿package com.novamart.dto.response;
+package com.novamart.dto.response;
 
-public class CategoryResponse {}
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class CategoryResponse {
+    private Long id;
+    private String name;
+    private Long parentId;
+}
