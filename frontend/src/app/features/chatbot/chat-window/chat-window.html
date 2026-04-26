@@ -1,1 +1,76 @@
-﻿<!-- Skeleton placeholder -->
+<button class="chat-toggle-btn" (click)="toggleChat()">
+  💬 AI Assistant
+</button>
+
+@if (isChatOpen()) {
+  <section class="chatbot-floating-window">
+    <header class="chatbot-head">
+      <div>
+        <h3>AI Analytics Chatbot</h3>
+      </div>
+      <button class="ghost-btn" type="button" (click)="toggleChat()">✕</button>
+    </header>
+
+    <div class="scope-banner">
+      <strong>Role: {{ role() }}</strong>
+      <span>{{ scopeMessage() }}</span>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="error-banner">{{ errorMessage() }}</p>
+    }
+
+    <div class="chat-layout">
+      <section class="chat-main card">
+        <div class="messages" aria-live="polite">
+          @for (message of messages(); track trackByMessageId($index, message)) {
+            <article class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+              <p>{{ message.content }}</p>
+              <small>{{ message.timestamp | date:'HH:mm' }}</small>
+            </article>
+          }
+          @if (isSending()) {
+            <article class="message assistant typing">
+              <p>Assistant is analyzing your request...</p>
+            </article>
+          }
+        </div>
+
+        @if (lastVisualizationCode()) {
+          <div class="viz-box">
+            <h4>Generated Visualization</h4>
+            @if (visualizationPreview()) {
+              <div class="viz-preview">
+                <strong>{{ visualizationPreview()!.title }}</strong>
+                <ul>
+                  @for (label of visualizationPreview()!.labels; track label; let i = $index) {
+                    <li>
+                      <span>{{ label }}</span>
+                      <div class="bar">
+                        <span [style.width.%]="widthByVisualization(visualizationPreview()!.values[i])"></span>
+                      </div>
+                      <strong>{{ visualizationPreview()!.values[i] }}</strong>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="composer">
+          <textarea
+            [ngModel]="draftQuestion()"
+            (ngModelChange)="draftQuestion.set($event)"
+            [disabled]="isSending()"
+            rows="2"
+            placeholder="Ask your analytics question..."
+          ></textarea>
+          <button class="primary-btn" type="button" (click)="send()" [disabled]="isSending() || !draftQuestion().trim()">
+            @if (isSending()) { ... } @else { Send }
+          </button>
+        </div>
+      </section>
+    </div>
+  </section>
+}

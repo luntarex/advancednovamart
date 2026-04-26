@@ -1,1 +1,201 @@
-﻿/* Skeleton placeholder */
+.addresses-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.addresses-head h1 {
+  margin: 0;
+  color: var(--text-main);
+}
+
+.addresses-head p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.status {
+  border: 1px dashed var(--border-light);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text-muted);
+}
+
+.banner {
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(79, 70, 229, 0.28);
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--primary-action);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.addresses-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  padding: 1rem;
+}
+
+.card h3 {
+  margin: 0 0 0.7rem;
+  color: var(--text-main);
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.62rem 0.72rem;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  margin-top: 0.2rem;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-action);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+small {
+  color: var(--urgency-accent);
+  font-size: 0.78rem;
+}
+
+.primary-btn {
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-action);
+  color: var(--text-on-action);
+  font-weight: 700;
+  padding: 0.68rem 0.92rem;
+  cursor: pointer;
+}
+
+.address-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.address-list li {
+  display: block;
+}
+
+.address-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 0.62rem 0.72rem;
+  display: grid;
+  gap: 0.28rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.address-card:hover {
+  border-color: var(--primary-action);
+}
+
+.address-card.active {
+  border-color: var(--primary-action);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.title-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.title-row strong {
+  color: var(--text-main);
+  font-size: 0.86rem;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary-action);
+  background: rgba(79, 70, 229, 0.13);
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+}
+
+.address-card p,
+.address-card span {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.address-card small {
+  color: var(--text-muted);
+}
+
+.remove-btn {
+  border: none;
+  background: transparent;
+  color: var(--urgency-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.remove-btn:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .addresses-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
