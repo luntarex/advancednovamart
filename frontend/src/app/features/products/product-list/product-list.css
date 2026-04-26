@@ -105,10 +105,24 @@
 .product-card {
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 0.9rem;
-  display: grid;
-  gap: 0.75rem;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.product-card:focus-visible {
+  outline: 2px solid var(--primary-action);
+  outline-offset: 2px;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary-action);
 }
 
 .card-head {
@@ -120,18 +134,28 @@
 .card-head h3 {
   margin: 0;
   color: var(--text-main);
-  font-size: 1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .sku {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .description {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-meta {
@@ -139,10 +163,14 @@
   justify-content: space-between;
   gap: 0.6rem;
   align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border-light);
 }
 
 .card-meta strong {
   color: var(--text-main);
+  font-size: 1.25rem;
+  font-weight: 800;
 }
 
 .card-meta span {
@@ -161,21 +189,33 @@
 .card-actions {
   display: flex;
   gap: 0.65rem;
+  align-items: center;
+  margin-top: 0.25rem;
 }
 
 .card-actions a {
   font-size: 0.88rem;
   color: var(--primary-action);
   font-weight: 600;
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  transition: background 0.15s ease;
+}
+
+.card-actions a:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .card-actions button {
+  flex-grow: 1;
   border: none;
   background: var(--primary-action);
   color: var(--text-on-action);
   border-radius: 999px;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.78rem;
+  padding: 0.6rem 0.65rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease;

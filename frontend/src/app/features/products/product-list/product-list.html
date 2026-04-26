@@ -52,7 +52,7 @@
   } @else {
     <div class="product-grid">
       @for (product of filteredProducts(); track trackById($index, product)) {
-        <article class="product-card">
+        <article class="product-card" tabindex="0" [routerLink]="['/products', product.id]">
           <div class="card-head">
             <h3>{{ product.name }}</h3>
             <span class="sku">{{ product.sku }}</span>
@@ -68,12 +68,11 @@
           </div>
 
           <div class="card-actions">
-            <a [routerLink]="['/products', product.id]">View</a>
             @if (canManageProducts()) {
-              <a [routerLink]="['/products', product.id, 'edit']">Edit</a>
+              <a [routerLink]="['/products', product.id, 'edit']" (click)="$event.stopPropagation()">Edit</a>
             }
             @if (canShop()) {
-              <button type="button" (click)="addToCart(product)" [disabled]="product.stockQuantity === 0">
+              <button type="button" (click)="$event.stopPropagation(); addToCart(product)" [disabled]="product.stockQuantity === 0">
                 Add to cart
               </button>
             }
