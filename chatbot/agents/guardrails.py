@@ -1,50 +1,104 @@
 """
-Guardrails Agent — The Bouncer.
-
-Checks if the user's question is:
-1. A greeting → respond with welcome message
-2. In scope → related to e-commerce data → continue to SQL agent
-3. Out of scope → not related → politely reject
+Guardrails agent.
+- Blocks prompt injection/prompt leakage attempts
+- Classifies greeting / in-scope / out-of-scope
 """
+from __future__ import annotations
+
+import os
 from langchain_openai import ChatOpenAI
+from security import detect_prompt_attack
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+GUARDRAIL_MODEL = os.getenv("OPENAI_GUARDRAIL_MODEL", "gpt-4.1-nano")
+_llm: ChatOpenAI | None = None
 
-GUARDRAILS_PROMPT = """You are a classifier for an e-commerce analytics chatbot.
+DOMAIN_HINTS = (
+    "product", "order", "sale", "revenue", "customer", "shipment", "review",
+    "category", "inventory", "stock", "store", "checkout", "analytics", "dashboard",
+)
+GREETINGS = (
+    "hello", "hi", "hey", "good morning", "good afternoon", "good evening", "selam", "merhaba",
+)
 
-Classify the following user question into exactly one category:
-- "greeting" — if the user is saying hello, hi, hey, good morning, etc.
-- "in_scope" — if the question is about e-commerce data like products, orders, customers, sales, revenue, shipments, reviews, categories, stores, or any business analytics.
-- "out_of_scope" — if the question is about weather, sports, politics, personal advice, or anything unrelated to e-commerce.
+CLASSIFY_PROMPT = """You are a strict classifier for an e-commerce analytics chatbot.
 
-Respond with ONLY one word: greeting, in_scope, or out_of_scope
+Return exactly one of these labels:
+- greeting
+- in_scope
+- out_of_scope
 
-User question: {question}"""
+Question: {question}
+"""
+
+
+def _cheap_rule_classify(question: str) -> str | None:
+    q = (question or "").strip().lower()
+    if not q:
+        return "out_of_scope"
+    if any(token in q for token in GREETINGS) and len(q.split()) <= 8:
+        return "greeting"
+    if any(token in q for token in DOMAIN_HINTS):
+        return "in_scope"
+    return None
+
+
+def _get_llm() -> ChatOpenAI:
+    global _llm
+    if _llm is None:
+        _llm = ChatOpenAI(model=GUARDRAIL_MODEL, temperature=0)
+    return _llm
 
 
 def guardrails_agent(state: dict) -> dict:
-    """
-    Classifies the user's question and decides if we should continue.
-    """
     question = state["question"]
 
-    response = llm.invoke(GUARDRAILS_PROMPT.format(question=question))
-    classification = response.content.strip().lower()
+    is_attack, reason = detect_prompt_attack(question)
+    if is_attack:
+        return {
+            "scope_type": "security_block",
+            "is_in_scope": False,
+            "is_security_violation": True,
+            "blocked_reason": reason,
+            "final_answer": (
+                "Bu istek guvenlik politikalarina takildi. "
+                "Yalnizca rolunuze uygun e-ticaret analiz sorularini yanitlayabilirim."
+            ),
+        }
+
+    rule_result = _cheap_rule_classify(question)
+    if rule_result is None:
+        response = _get_llm().invoke(CLASSIFY_PROMPT.format(question=question))
+        classification = (response.content or "").strip().lower()
+    else:
+        classification = rule_result
 
     if classification == "greeting":
         return {
             "scope_type": "greeting",
             "is_in_scope": False,
-            "final_answer": "👋 Hello! I'm the NovaMart AI assistant. I can help you analyze your e-commerce data. Try asking me things like:\n\n• 'What are the top 5 products by revenue?'\n• 'Show me total sales by category'\n• 'How many orders were placed this month?'\n\nWhat would you like to know?",
+            "is_security_violation": False,
+            "blocked_reason": "",
+            "final_answer": (
+                "Merhaba. NovaMart AI Veri Asistani olarak satis, siparis, stok, musteri ve sevkiyat "
+                "analizlerinde yardimci olabilirim."
+            ),
         }
-    elif classification == "in_scope":
+
+    if classification == "in_scope":
         return {
             "scope_type": "in_scope",
             "is_in_scope": True,
+            "is_security_violation": False,
+            "blocked_reason": "",
         }
-    else:
-        return {
-            "scope_type": "out_of_scope",
-            "is_in_scope": False,
-            "final_answer": "I'm sorry, I can only answer questions related to e-commerce data such as products, orders, sales, customers, and shipments. Could you please ask something related to our platform?",
-        }
+
+    return {
+        "scope_type": "out_of_scope",
+        "is_in_scope": False,
+        "is_security_violation": False,
+        "blocked_reason": "",
+        "final_answer": (
+            "Bu asistan yalnizca e-ticaret verileri icin kullanilir. "
+            "Ornek: 'Bu ay en cok satan 5 urun nedir?'"
+        ),
+    }

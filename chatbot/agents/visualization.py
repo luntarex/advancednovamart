@@ -1,55 +1,46 @@
 """
-Visualization Agent — The Chart Maker.
-
-Decides if a chart would be helpful for the data,
-and if so, generates Plotly Python code to render it.
+Deterministic visualization agent.
+Builds safe Plotly JSON without executing model-generated code.
 """
-from langchain_openai import ChatOpenAI
+from __future__ import annotations
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+import json
+from typing import Any
+import plotly.express as px
 
-VIZ_PROMPT = """You are a data visualization expert. Based on the query results below,
-decide if a chart would be helpful. If yes, generate Python Plotly code.
 
-User question: "{question}"
-Query results: {query_result}
-
-RULES:
-1. If the data has fewer than 2 rows, respond with "NO_CHART"
-2. If a chart would be helpful, generate ONLY the Python code using Plotly
-3. The code must use `plotly.graph_objects` or `plotly.express`
-4. Store the figure in a variable called `fig`
-5. Do NOT call `fig.show()` — the frontend will render it
-6. Include `fig.to_json()` at the end to serialize the chart
-7. Do NOT include any explanation, just the code
-
-Respond with either "NO_CHART" or the Python code."""
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float))
 
 
 def visualization_agent(state: dict) -> dict:
-    """
-    Generates Plotly visualization code if appropriate for the data.
-    """
-    query_result = state.get("query_result", "")
-
-    # Skip visualization for empty results
-    if not query_result or query_result == "[]":
+    raw = (state.get("query_result") or "").strip()
+    if not raw:
         return {"visualization_code": ""}
 
-    response = llm.invoke(VIZ_PROMPT.format(
-        question=state["question"],
-        query_result=query_result,
-    ))
-
-    code = response.content.strip()
-
-    if code == "NO_CHART" or "NO_CHART" in code:
+    try:
+        rows = json.loads(raw)
+    except json.JSONDecodeError:
         return {"visualization_code": ""}
 
-    # Clean up markdown fences
-    if code.startswith("```"):
-        code = code.split("\n", 1)[1] if "\n" in code else code[3:]
-    if code.endswith("```"):
-        code = code[:-3]
+    if not isinstance(rows, list) or len(rows) < 2:
+        return {"visualization_code": ""}
+    if not isinstance(rows[0], dict):
+        return {"visualization_code": ""}
 
-    return {"visualization_code": code.strip()}
+    keys = list(rows[0].keys())
+    if len(keys) < 2:
+        return {"visualization_code": ""}
+
+    numeric_candidates = [k for k in keys if all(_is_number(r.get(k)) for r in rows if k in r)]
+    if not numeric_candidates:
+        return {"visualization_code": ""}
+
+    y_col = numeric_candidates[0]
+    x_candidates = [k for k in keys if k != y_col]
+    if not x_candidates:
+        return {"visualization_code": ""}
+    x_col = x_candidates[0]
+
+    fig = px.bar(rows, x=x_col, y=y_col, title="Analytics Result")
+    return {"visualization_code": fig.to_json()}
