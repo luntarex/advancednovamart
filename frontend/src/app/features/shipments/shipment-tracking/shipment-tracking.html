@@ -1,1 +1,117 @@
-﻿<!-- Skeleton placeholder -->
+<section class="shipments-page">
+  <header class="page-head">
+    <div>
+      <h1>Shipment Tracking</h1>
+      @if (isIndividual()) {
+        <p>Track your delivery progress in real time.</p>
+      } @else if (canManageFulfillment()) {
+        <p>Manage shipment workflow and fulfillment updates.</p>
+      }
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner banner-warn">{{ errorMessage() }}</p>
+  }
+
+  @if (successMessage()) {
+    <p class="banner banner-success">{{ successMessage() }}</p>
+  }
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span>Total Shipments</span>
+      <strong>{{ totalShipments() }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Pending</span>
+      <strong>{{ pendingCount() }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>In Transit</span>
+      <strong>{{ inTransitCount() }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Delivered</span>
+      <strong>{{ deliveredCount() }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Returned</span>
+      <strong>{{ returnedCount() }}</strong>
+    </article>
+    <article class="stat-card">
+      <span>Delivery Success</span>
+      <strong>{{ deliverySuccessRate() | number:'1.0-0' }}%</strong>
+    </article>
+  </section>
+
+  <section class="filters">
+    <input
+      type="text"
+      placeholder="Search by tracking, order, warehouse..."
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+      [ngModelOptions]="{ standalone: true }"
+    />
+    <app-dropdown
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event)"
+      [ngModelOptions]="{ standalone: true }"
+      [options]="statusOptions"
+    ></app-dropdown>
+  </section>
+
+  @if (isLoading()) {
+    <p class="status">Loading shipments...</p>
+  } @else if (visibleShipments().length === 0) {
+    <p class="status">No shipments match your current filters.</p>
+  } @else {
+    <section class="layout">
+      <article class="card">
+        <h3>Shipment List</h3>
+        <ul class="shipment-list">
+          @for (shipment of visibleShipments(); track shipment.id) {
+            <li [class.selected]="selectedShipmentId() === shipment.id" (click)="selectShipment(shipment.id)">
+              <div>
+                <strong>{{ shipment.trackingNumber }}</strong>
+                <p>Order #{{ shipment.orderId }} · {{ shipment.mode }} · {{ shipment.warehouse }}</p>
+              </div>
+              <span class="pill pill-{{ shipment.status.toLowerCase() }}">{{ shipment.status }}</span>
+            </li>
+          }
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3>Shipment Details</h3>
+        @if (!selectedShipment()) {
+          <p class="status">Select a shipment to view details.</p>
+        } @else {
+          <div class="details">
+            <p><span>Tracking</span><strong>{{ selectedShipment()!.trackingNumber }}</strong></p>
+            <p><span>Order</span><strong>#{{ selectedShipment()!.orderId }}</strong></p>
+            <p><span>Warehouse</span><strong>{{ selectedShipment()!.warehouse }}</strong></p>
+            <p><span>Mode</span><strong>{{ selectedShipment()!.mode }}</strong></p>
+            <p><span>Last Updated</span><strong>{{ selectedShipment()!.lastUpdated | date:'short' }}</strong></p>
+            <p><span>ETA</span><strong>{{ selectedShipment()!.estimatedDelivery | date:'mediumDate' }}</strong></p>
+          </div>
+
+          <ol class="timeline">
+            @for (step of shipmentSteps; track step; let i = $index) {
+              <li [class.active]="i <= statusStepIndex(selectedShipment()!.status)">{{ step }}</li>
+            }
+          </ol>
+
+          @if (canManageFulfillment()) {
+            <div class="actions">
+              <button type="button" (click)="updateStatus(selectedShipment()!, 'PENDING')">Set Pending</button>
+              <button type="button" (click)="updateStatus(selectedShipment()!, 'IN_TRANSIT')">Set In Transit</button>
+              <button type="button" (click)="updateStatus(selectedShipment()!, 'DELIVERED')">Set Delivered</button>
+              <button type="button" class="danger" (click)="updateStatus(selectedShipment()!, 'RETURNED')">Set Returned</button>
+            </div>
+          }
+        }
+      </article>
+    </section>
+  }
+</section>
