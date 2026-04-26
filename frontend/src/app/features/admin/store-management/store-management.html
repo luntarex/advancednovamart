@@ -1,1 +1,118 @@
-﻿<!-- Skeleton placeholder -->
+<section class="admin-page">
+  <header class="page-head">
+    <div>
+      <h1>Store Management</h1>
+      <p>Approve stores, control open/close status, and review cross-store performance.</p>
+    </div>
+    <div class="kpis">
+      <div><strong>{{ pendingCount() }}</strong><span>Pending</span></div>
+      <div><strong>{{ openCount() }}</strong><span>Open</span></div>
+      <div><strong>{{ closedCount() }}</strong><span>Closed</span></div>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  <section class="cards">
+    <article class="card">
+      <h3>Category Taxonomy</h3>
+      <div class="category-form">
+        <input
+          type="text"
+          placeholder="Add category"
+          [ngModel]="newCategory()"
+          (ngModelChange)="newCategory.set($event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+        <button type="button" (click)="addCategory()">Add</button>
+      </div>
+      <ul class="category-list">
+        @for (category of categories(); track category) {
+          <li>
+            <span>{{ category }}</span>
+            <button type="button" (click)="removeCategory(category)">Remove</button>
+          </li>
+        }
+      </ul>
+    </article>
+
+    <article class="card">
+      <h3>Cross-Store Revenue</h3>
+      <ul class="revenue-list">
+        @for (entry of revenueByStore(); track entry.id) {
+          <li>
+            <span>{{ entry.name }}</span>
+            <strong>{{ entry.revenue | currency:'TRY':'symbol':'1.0-0' }}</strong>
+          </li>
+        }
+      </ul>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="table-tools">
+      <h3>Stores</h3>
+      <div class="filters">
+        <input type="text" placeholder="Search stores..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" [ngModelOptions]="{ standalone: true }" />
+        <app-dropdown
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+          [options]="statusFilterOptions"
+          placeholder="All statuses"
+        ></app-dropdown>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <p class="status">Loading stores...</p>
+    } @else if (filteredStores().length === 0) {
+      <p class="status">No stores match your filters.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Store</th>
+              <th>Owner ID</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (store of filteredStores(); track trackByStoreId($index, store)) {
+              <tr>
+                <td>#{{ store.id }}</td>
+                <td>{{ store.name }}</td>
+                <td>{{ store.ownerId }}</td>
+                <td><span class="status-pill status-{{ store.status.toLowerCase() }}">{{ store.status }}</span></td>
+                <td class="actions">
+                  @if (store.status === 'PENDING_APPROVAL') {
+                    <button type="button" (click)="setStoreStatus(store, 'OPEN')">Approve</button>
+                  }
+                  <button type="button" (click)="setStoreStatus(store, 'OPEN')">Open</button>
+                  <button type="button" (click)="setStoreStatus(store, 'CLOSED')">Close</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="card">
+    <h3>Activity Monitoring</h3>
+    <ul class="audit-list">
+      @for (entry of auditLog(); track entry.id) {
+        <li>
+          <strong>{{ entry.action }}</strong>
+          <span>{{ entry.actor }}</span>
+          <time>{{ entry.at | date:'short' }}</time>
+        </li>
+      }
+    </ul>
+  </section>
+</section>
