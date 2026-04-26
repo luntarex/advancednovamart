@@ -12,6 +12,12 @@
   } @else {
     <article class="detail-card">
       <div class="detail-main">
+        <img
+          class="detail-image"
+          [src]="product()!.imageUrl || fallbackImageUrl"
+          (error)="onProductImageError($event)"
+          [alt]="product()!.name"
+        />
         <h1>{{ product()!.name }}</h1>
         <p class="sku">SKU: {{ product()!.sku }}</p>
         <p class="description">{{ product()!.description || 'No product description available.' }}</p>
@@ -49,5 +55,100 @@
         }
       </aside>
     </article>
+
+    <section class="reviews-card">
+      <div class="reviews-head">
+        <h2>Product Reviews</h2>
+        @if (visibleReviews().length > 0) {
+          <span class="rating-summary">{{ averageRating() | number:'1.1-1' }}/5 ({{ visibleReviews().length }})</span>
+        }
+      </div>
+
+      @if (canAddReview()) {
+        <div class="review-actions">
+          <button class="primary-btn" type="button" (click)="toggleReviewForm()">
+            @if (showReviewForm()) { Cancel Review } @else { Add Review }
+          </button>
+        </div>
+      }
+
+      @if (showReviewForm() && canAddReview()) {
+        <div class="review-form">
+          <label for="reviewRating">Rating</label>
+          <select id="reviewRating" [ngModel]="reviewRating()" (ngModelChange)="reviewRating.set($event)">
+            <option [ngValue]="5">5 - Excellent</option>
+            <option [ngValue]="4">4 - Good</option>
+            <option [ngValue]="3">3 - Average</option>
+            <option [ngValue]="2">2 - Poor</option>
+            <option [ngValue]="1">1 - Bad</option>
+          </select>
+
+          <label for="reviewText">Your Review</label>
+          <textarea
+            id="reviewText"
+            rows="4"
+            [ngModel]="reviewText()"
+            (ngModelChange)="reviewText.set($event)"
+            placeholder="Share your experience with this product"
+          ></textarea>
+
+          <button class="primary-btn" type="button" (click)="submitReview()" [disabled]="isSubmittingReview()">
+            @if (isSubmittingReview()) { Submitting... } @else { Submit Review }
+          </button>
+        </div>
+      }
+
+      @if (reviewMessage()) {
+        <p class="review-message">{{ reviewMessage() }}</p>
+      }
+
+      @if (isLoadingReviews()) {
+        <p class="status">Loading reviews...</p>
+      } @else if (visibleReviews().length === 0) {
+        <p class="status">No reviews yet for this product.</p>
+      } @else {
+        <ul class="review-list">
+          @for (review of visibleReviews(); track review.id) {
+            <li class="review-item">
+              <header>
+                <strong>{{ review.starRating }}/5</strong>
+                <span>{{ review.createdAt | date:'mediumDate' }}</span>
+              </header>
+              <p>{{ review.reviewText || 'No comment provided.' }}</p>
+              @if (review.responseText) {
+                <p class="review-response"><strong>Store response:</strong> {{ review.responseText }}</p>
+              }
+              @if (canRespondToReviews()) {
+                <div class="review-actions">
+                  <button
+                    class="ghost-btn"
+                    type="button"
+                    (click)="startRespond(review)"
+                  >
+                    @if (review.responseText) { Edit Response } @else { Respond }
+                  </button>
+                </div>
+              }
+              @if (canRespondToReviews() && respondingReviewId() === review.id) {
+                <div class="review-form">
+                  <label for="responseText-{{ review.id }}">Response</label>
+                  <textarea
+                    id="responseText-{{ review.id }}"
+                    rows="3"
+                    [ngModel]="responseDraft()"
+                    (ngModelChange)="responseDraft.set($event)"
+                    placeholder="Write your response to this review"
+                  ></textarea>
+                  <div class="review-actions">
+                    <button class="primary-btn" type="button" (click)="submitResponse(review)">Save Response</button>
+                    <button class="ghost-btn" type="button" (click)="cancelRespond()">Cancel</button>
+                  </div>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
   }
 </section>

@@ -45,18 +45,31 @@
         </div>
 
         <div class="field">
-          <label for="categoryId">Category ID</label>
-          <input id="categoryId" type="number" formControlName="categoryId" min="0" />
+          <label for="categoryId">Category</label>
+          <app-dropdown
+            placeholder="Select category"
+            [options]="categoryOptions()"
+            formControlName="categoryId"
+          ></app-dropdown>
         </div>
 
         <div class="field">
-          <label for="storeId">Store ID</label>
-          <input id="storeId" type="number" formControlName="storeId" min="0" />
+          <label for="storeId">Store</label>
+          <app-dropdown
+            placeholder="Select store"
+            [options]="storeOptions()"
+            formControlName="storeId"
+          ></app-dropdown>
         </div>
 
         <div class="field field--wide">
           <label for="description">Description</label>
           <textarea id="description" formControlName="description" rows="4" placeholder="Write a concise product description..."></textarea>
+        </div>
+
+        <div class="field field--wide">
+          <label for="imageUrl">Image URL</label>
+          <input id="imageUrl" type="url" formControlName="imageUrl" placeholder="https://example.com/product-image.jpg" />
         </div>
       </div>
 

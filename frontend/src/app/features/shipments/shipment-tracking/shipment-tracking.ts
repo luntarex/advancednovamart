@@ -146,6 +146,24 @@ export class ShipmentTracking {
           orderMap[order.id] = order;
         }
         this.ordersById.set(orderMap);
+
+        this.shipmentService.getAll().subscribe({
+          next: (shipments) => {
+            const normalized = this.normalizeShipments(shipments as Shipment[], orderMap);
+            const scoped = this.scopeByRole(normalized, orderMap);
+            this.shipments.set(scoped);
+            this.selectedShipmentId.set(scoped[0]?.id ?? null);
+            this.isLoading.set(false);
+          },
+          error: () => {
+            const normalized = this.normalizeShipments(this.getFallbackShipments(), orderMap);
+            const scoped = this.scopeByRole(normalized, orderMap);
+            this.shipments.set(scoped);
+            this.selectedShipmentId.set(scoped[0]?.id ?? null);
+            this.errorMessage.set('Live shipment data is unavailable. Showing sample shipment tracking data.');
+            this.isLoading.set(false);
+          },
+        });
       },
       error: () => {
         const fallbackOrders = this.getFallbackOrders();
@@ -154,20 +172,9 @@ export class ShipmentTracking {
           orderMap[order.id] = order;
         }
         this.ordersById.set(orderMap);
-      },
-    });
 
-    this.shipmentService.getAll().subscribe({
-      next: (shipments) => {
-        const normalized = this.normalizeShipments(shipments as Shipment[]);
-        const scoped = this.scopeByRole(normalized);
-        this.shipments.set(scoped);
-        this.selectedShipmentId.set(scoped[0]?.id ?? null);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        const normalized = this.normalizeShipments(this.getFallbackShipments());
-        const scoped = this.scopeByRole(normalized);
+        const normalized = this.normalizeShipments(this.getFallbackShipments(), orderMap);
+        const scoped = this.scopeByRole(normalized, orderMap);
         this.shipments.set(scoped);
         this.selectedShipmentId.set(scoped[0]?.id ?? null);
         this.errorMessage.set('Live shipment data is unavailable. Showing sample shipment tracking data.');
@@ -176,10 +183,10 @@ export class ShipmentTracking {
     });
   }
 
-  private normalizeShipments(shipments: Shipment[]): ShipmentView[] {
+  private normalizeShipments(shipments: Shipment[], orderMap: Record<number, Order>): ShipmentView[] {
     const now = Date.now();
     return shipments.map((shipment, index) => {
-      const order = this.ordersById()[shipment.orderId];
+      const order = orderMap[shipment.orderId];
       return {
         ...shipment,
         userId: order?.userId,
@@ -191,15 +198,15 @@ export class ShipmentTracking {
     });
   }
 
-  private scopeByRole(shipments: ShipmentView[]): ShipmentView[] {
+  private scopeByRole(shipments: ShipmentView[], orderMap: Record<number, Order>): ShipmentView[] {
     if (this.isIndividual()) {
       const uid = this.userId();
       return shipments.filter((shipment) => shipment.userId === uid);
     }
 
     if (this.role() === 'CORPORATE') {
-      const corporateStoreId = Number(localStorage.getItem('corporateStoreId') ?? 1);
-      return shipments.filter((shipment) => shipment.storeId === corporateStoreId);
+      const allowedOrderIds = new Set(Object.keys(orderMap).map((id) => Number(id)));
+      return shipments.filter((shipment) => allowedOrderIds.has(shipment.orderId));
     }
 
     return shipments;
