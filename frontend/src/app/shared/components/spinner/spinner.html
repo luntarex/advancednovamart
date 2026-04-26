@@ -1,1 +1,6 @@
-﻿<!-- Skeleton placeholder -->
+@if (visible()) {
+  <div class="spinner-wrapper" [class.spinner-wrapper--fullscreen]="fullScreen()">
+    <div class="spinner" [class]="sizeClass()" role="status" [attr.aria-label]="label()"></div>
+    <span class="spinner-label">{{ label() }}</span>
+  </div>
+}

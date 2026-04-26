@@ -1,1 +1,17 @@
-﻿<!-- Skeleton placeholder -->
+@if (open()) {
+  <aside class="toast-shell">
+    <article [class]="toastClass()" role="status" aria-live="polite">
+      <div class="toast-content">
+        @if (title()) {
+          <h4>{{ title() }}</h4>
+        }
+        <p>{{ message() }}</p>
+      </div>
+      @if (dismissible()) {
+        <button class="toast-close" type="button" (click)="dismiss()" aria-label="Close notification">
+          x
+        </button>
+      }
+    </article>
+  </aside>
+}
