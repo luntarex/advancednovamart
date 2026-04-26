@@ -1,1 +1,111 @@
-﻿<!-- Skeleton placeholder -->
+<section class="reviews-page">
+  <header class="page-head">
+    <div>
+      <h1>Reviews</h1>
+      @if (isIndividual()) {
+        <p>Submit and manage your product reviews.</p>
+      } @else if (isCorporate()) {
+        <p>Review management for your product catalog and customer response workflow.</p>
+      } @else if (isAdmin()) {
+        <p>Platform-wide review moderation and quality assurance.</p>
+      }
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="banner banner-warn">{{ errorMessage() }}</p>
+  }
+
+  @if (successMessage()) {
+    <p class="banner banner-success">{{ successMessage() }}</p>
+  }
+
+  @if (isIndividual()) {
+    <section class="card">
+      <h3>Review Posting</h3>
+      <p class="status">To add a review, open a product page and use the `Add Review` button in product detail.</p>
+    </section>
+  }
+
+  <section class="card">
+    <div class="filters">
+      <input type="text" placeholder="Search reviews..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" [ngModelOptions]="{ standalone: true }" />
+      <app-dropdown
+        [ngModel]="starFilter()"
+        (ngModelChange)="starFilter.set($event)"
+        [ngModelOptions]="{ standalone: true }"
+        [options]="starOptions"
+      ></app-dropdown>
+      <app-dropdown
+        [ngModel]="sentimentFilter()"
+        (ngModelChange)="sentimentFilter.set($event)"
+        [ngModelOptions]="{ standalone: true }"
+        [options]="sentimentOptions"
+      ></app-dropdown>
+    </div>
+
+    @if (isLoading()) {
+      <p class="status">Loading reviews...</p>
+    } @else if (filteredReviews().length === 0) {
+      <p class="status">No reviews match your current filters.</p>
+    } @else {
+      <ul class="review-list">
+        @for (review of filteredReviews(); track trackById($index, review)) {
+          @if (review.visibility !== 'HIDDEN' || isAdmin()) {
+            <li class="review-item">
+              <header>
+                <div>
+                  <strong>{{ review.productTitle || ('Product #' + review.productId) }}</strong>
+                  <p>Rating: {{ review.starRating }}/5 · Sentiment: {{ review.sentiment || 'NEUTRAL' }}</p>
+                </div>
+                <span>{{ review.createdAt | date:'mediumDate' }}</span>
+              </header>
+
+              <p class="text">{{ review.reviewText || 'No review text.' }}</p>
+
+              @if (review.responseText) {
+                <p class="response"><strong>Response:</strong> {{ review.responseText }}</p>
+              }
+
+              @if ((isCorporate() || isAdmin()) && respondingReviewId() === review.id) {
+                <div class="response-editor">
+                  <textarea
+                    rows="2"
+                    [ngModel]="responseDraft()"
+                    (ngModelChange)="responseDraft.set($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Write a response to customer feedback"
+                  ></textarea>
+                  <div class="response-actions">
+                    <button type="button" (click)="submitResponse(review)">Save Response</button>
+                    <button type="button" class="danger" (click)="cancelRespond()">Cancel</button>
+                  </div>
+                </div>
+              }
+
+              <footer class="actions">
+                <span>Helpful votes: {{ review.helpfulVotes || 0 }}</span>
+
+                @if (canEdit(review)) {
+                  <button type="button" class="danger" (click)="deleteReview(review)">Delete</button>
+                }
+
+                @if (isCorporate() || isAdmin()) {
+                  <button type="button" (click)="startRespond(review)">
+                    @if (review.responseText) { Edit Response } @else { Respond }
+                  </button>
+                }
+
+                @if (isAdmin()) {
+                  <button type="button" class="danger" (click)="toggleVisibility(review)">
+                    @if (review.visibility === 'HIDDEN') { Unhide } @else { Hide }
+                  </button>
+                }
+              </footer>
+            </li>
+          }
+        }
+      </ul>
+    }
+  </section>
+</section>
