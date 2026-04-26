@@ -1,1 +1,18 @@
-﻿<!-- Skeleton placeholder -->
+@if (open()) {
+  <div class="dialog-backdrop" (click)="onBackdropClick()">
+    <section class="dialog-card" role="dialog" aria-modal="true" [attr.aria-label]="title()" (click)="$event.stopPropagation()">
+      <header class="dialog-header">
+        <h2>{{ title() }}</h2>
+      </header>
+      <p class="dialog-message">{{ message() }}</p>
+      <footer class="dialog-actions">
+        <button class="btn btn--secondary" type="button" (click)="cancel()">
+          {{ cancelText() }}
+        </button>
+        <button class="btn" [class.btn--danger]="destructive()" type="button" [disabled]="loading()" (click)="confirm()">
+          {{ confirmText() }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

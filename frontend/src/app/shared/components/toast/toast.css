@@ -1,1 +1,57 @@
-﻿/* Skeleton placeholder */
+.toast-shell {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+}
+
+.toast {
+  min-width: 18rem;
+  max-width: 24rem;
+  border-radius: 0.75rem;
+  border-left: 4px solid transparent;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.toast-content h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.toast-content p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.45;
+  font-size: 0.875rem;
+}
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.toast--success {
+  border-left-color: #15803d;
+}
+
+.toast--info {
+  border-left-color: #0369a1;
+}
+
+.toast--warning {
+  border-left-color: #ca8a04;
+}
+
+.toast--error {
+  border-left-color: #b91c1c;
+}
