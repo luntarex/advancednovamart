@@ -1,1 +1,85 @@
-﻿<!-- Skeleton placeholder -->
+<section class="products-page">
+  <header class="products-head">
+    <div>
+      <h1>Products</h1>
+      <p>Browse, filter, and manage products in your catalog.</p>
+    </div>
+    @if (canManageProducts()) {
+      <a class="create-btn" routerLink="/products/new">Add Product</a>
+    }
+  </header>
+
+  @if (canShop()) {
+    <p class="role-note">Individual user mode: browse products and add items to cart.</p>
+  } @else if (canManageProducts()) {
+    <p class="role-note">Corporate/Admin mode: product catalog management is enabled.</p>
+  }
+
+  <section class="toolbar">
+    <input
+      type="text"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event); onFilterChange()"
+      placeholder="Search by name or SKU"
+    />
+
+    <app-dropdown
+      [ngModel]="sortBy()"
+      (ngModelChange)="sortBy.set($event); onFilterChange()"
+      [options]="sortOptions"
+    ></app-dropdown>
+
+    <label class="sale-toggle">
+      <input type="checkbox" [ngModel]="saleOnly()" (ngModelChange)="saleOnly.set($event); onFilterChange()" />
+      On Sale
+    </label>
+
+    <button class="ghost-btn" type="button" (click)="clearFilters()">Reset</button>
+  </section>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (successMessage()) {
+    <p class="success-banner">{{ successMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading products...</p>
+  } @else if (filteredProducts().length === 0) {
+    <p class="status">No products match your filters.</p>
+  } @else {
+    <div class="product-grid">
+      @for (product of filteredProducts(); track trackById($index, product)) {
+        <article class="product-card">
+          <div class="card-head">
+            <h3>{{ product.name }}</h3>
+            <span class="sku">{{ product.sku }}</span>
+          </div>
+
+          <p class="description">{{ product.description || 'No description provided.' }}</p>
+
+          <div class="card-meta">
+            <strong>{{ product.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</strong>
+            <span [class.out-of-stock]="product.stockQuantity === 0">
+              @if (product.stockQuantity === 0) { Out of stock } @else { Stock: {{ product.stockQuantity }} }
+            </span>
+          </div>
+
+          <div class="card-actions">
+            <a [routerLink]="['/products', product.id]">View</a>
+            @if (canManageProducts()) {
+              <a [routerLink]="['/products', product.id, 'edit']">Edit</a>
+            }
+            @if (canShop()) {
+              <button type="button" (click)="addToCart(product)" [disabled]="product.stockQuantity === 0">
+                Add to cart
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

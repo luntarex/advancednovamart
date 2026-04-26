@@ -1,1 +1,53 @@
-﻿<!-- Skeleton placeholder -->
+<section class="detail-page">
+  <a class="back-link" routerLink="/products">← Back to products</a>
+
+  @if (errorMessage()) {
+    <p class="banner">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="status">Loading product...</p>
+  } @else if (!product()) {
+    <p class="status">No product found for this id.</p>
+  } @else {
+    <article class="detail-card">
+      <div class="detail-main">
+        <h1>{{ product()!.name }}</h1>
+        <p class="sku">SKU: {{ product()!.sku }}</p>
+        <p class="description">{{ product()!.description || 'No product description available.' }}</p>
+      </div>
+
+      <aside class="purchase-panel">
+        <strong class="price">{{ product()!.unitPrice | currency:'TRY':'symbol':'1.0-0' }}</strong>
+
+        <p class="stock" [class.out-of-stock]="!inStock()">
+          @if (inStock()) { In stock: {{ product()!.stockQuantity }} } @else { Out of stock }
+        </p>
+
+        @if (canShop()) {
+          <div class="quantity-row">
+            <button type="button" (click)="decreaseQuantity()" [disabled]="!inStock()">-</button>
+            <span>{{ quantity() }}</span>
+            <button type="button" (click)="increaseQuantity()" [disabled]="!inStock()">+</button>
+          </div>
+
+          <button class="primary-btn" type="button" (click)="addToCart()" [disabled]="!inStock()">
+            Add to Cart
+          </button>
+        }
+
+        @if (canManageProducts()) {
+          <a class="ghost-btn" [routerLink]="['/products', product()!.id, 'edit']">Edit Product</a>
+        }
+
+        @if (!canShop() && !canManageProducts()) {
+          <p class="role-note">Sign in as an individual user to add this product to cart.</p>
+        }
+
+        @if (infoMessage()) {
+          <p class="info">{{ infoMessage() }}</p>
+        }
+      </aside>
+    </article>
+  }
+</section>

@@ -1,1 +1,78 @@
-﻿<!-- Skeleton placeholder -->
+<section class="form-page">
+  <header class="form-head">
+    <div>
+      <h1>@if (isEditMode()) { Edit Product } @else { Create Product }</h1>
+      <p>Keep your catalog details accurate and up to date.</p>
+    </div>
+    <a class="back-link" routerLink="/products">Back to products</a>
+  </header>
+
+  @if (isLoading()) {
+    <p class="status">Loading product information...</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="grid">
+        <div class="field field--wide">
+          <label for="name">Name</label>
+          <input id="name" type="text" formControlName="name" placeholder="Product name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <small>Name is required (min 2 chars).</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="sku">SKU</label>
+          <input id="sku" type="text" formControlName="sku" placeholder="SKU-0001" />
+          @if (form.controls.sku.touched && form.controls.sku.invalid) {
+            <small>SKU is required (min 3 chars).</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="unitPrice">Price</label>
+          <input id="unitPrice" type="number" formControlName="unitPrice" min="0" />
+          @if (form.controls.unitPrice.touched && form.controls.unitPrice.invalid) {
+            <small>Price must be 0 or greater.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="stockQuantity">Stock</label>
+          <input id="stockQuantity" type="number" formControlName="stockQuantity" min="0" />
+          @if (form.controls.stockQuantity.touched && form.controls.stockQuantity.invalid) {
+            <small>Stock must be 0 or greater.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="categoryId">Category ID</label>
+          <input id="categoryId" type="number" formControlName="categoryId" min="0" />
+        </div>
+
+        <div class="field">
+          <label for="storeId">Store ID</label>
+          <input id="storeId" type="number" formControlName="storeId" min="0" />
+        </div>
+
+        <div class="field field--wide">
+          <label for="description">Description</label>
+          <textarea id="description" formControlName="description" rows="4" placeholder="Write a concise product description..."></textarea>
+        </div>
+      </div>
+
+      @if (submitError()) {
+        <p class="submit-error">{{ submitError() }}</p>
+      }
+
+      @if (submitSuccess()) {
+        <p class="submit-success">{{ submitSuccess() }}</p>
+      }
+
+      <div class="actions">
+        <button class="primary-btn" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) { Saving... } @else if (isEditMode()) { Save Changes } @else { Create Product }
+        </button>
+      </div>
+    </form>
+  }
+</section>
