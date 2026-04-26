@@ -1,1 +1,59 @@
-﻿<!-- Skeleton placeholder -->
+<section class="auth-page">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h1>Create Account</h1>
+      <p>Join NovaMart and start managing your shopping journey.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <label for="register-name">Full Name</label>
+      <input id="register-name" type="text" formControlName="fullName" placeholder="John Doe" />
+      @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+        <small class="field-error">Please enter your full name.</small>
+      }
+
+      <label for="register-email">Email</label>
+      <input id="register-email" type="email" formControlName="email" placeholder="you@example.com" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <small class="field-error">Enter a valid email address.</small>
+      }
+
+      <app-dropdown
+        label="Account Type"
+        formControlName="roleType"
+        [options]="roleOptions"
+      ></app-dropdown>
+
+      <label for="register-password">Password</label>
+      <input id="register-password" type="password" formControlName="password" placeholder="At least 6 characters" />
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <small class="field-error">Password must be at least 6 characters.</small>
+      }
+
+      <label for="register-confirm-password">Confirm Password</label>
+      <input id="register-confirm-password" type="password" formControlName="confirmPassword" placeholder="Retype password" />
+      @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
+        <small class="field-error">Please confirm your password.</small>
+      } @else if (passwordMismatch) {
+        <small class="field-error">Passwords do not match.</small>
+      }
+
+      @if (submitError()) {
+        <p class="submit-error">{{ submitError() }}</p>
+      }
+
+      @if (submitSuccess()) {
+        <p class="submit-success">{{ submitSuccess() }}</p>
+      }
+
+      <button class="auth-btn" type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) { Creating account... } @else { Create Account }
+      </button>
+    </form>
+
+    <p class="auth-foot">
+      Already have an account?
+      <a routerLink="/auth/login">Sign in</a>
+    </p>
+  </div>
+</section>
