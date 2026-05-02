@@ -14,4 +14,6 @@ export interface ChatRequest {
 export interface ChatResponse {
   answer: string;
   visualizationCode?: string;
+  sqlQuery?: string;
+  blockedReason?: string;
 }

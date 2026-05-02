@@ -3,6 +3,7 @@ FastAPI entry point for the LangGraph chatbot service.
 """
 from __future__ import annotations
 
+import os
 import time
 from collections import defaultdict, deque
 
@@ -19,7 +20,7 @@ load_dotenv()
 app = FastAPI(
     title="NovaMart AI Chatbot",
     description="Secure Multi-Agent Text2SQL chatbot powered by LangGraph",
-    version="2.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -73,7 +74,7 @@ async def ask(request: ChatRequest):
     key = _rate_limit_key(request)
     if _is_rate_limited(key):
         return ChatResponse(
-            answer="Cok fazla istek algilandi. Lutfen bir dakika sonra tekrar deneyin.",
+            answer="Cok fazla istek algilandi. Lutfen bir sure sonra tekrar deneyin.",
             blocked_reason="rate_limit",
         )
 
@@ -100,11 +101,25 @@ async def ask(request: ChatRequest):
         "iteration_count": 0,
     }
 
-    result = workflow.invoke(initial_state)
+    try:
+        result = workflow.invoke(initial_state)
+    except Exception:
+        provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+        if provider == "ollama":
+            hint = "Ollama'yi baslatin (ollama serve) ve modeli indirin (ornek: ollama pull qwen2.5:7b)."
+        elif provider == "gemini":
+            hint = "GOOGLE_API_KEY, internet erisimi ve Gemini model adini kontrol edin."
+        else:
+            hint = "OPENAI_API_KEY, internet erisimi ve veritabani ayarlarinizi kontrol edin."
+
+        return ChatResponse(
+            answer=f"Chatbot su anda istegi isleyemedi. {hint}",
+            blocked_reason="runtime_error",
+        )
 
     answer = result.get("final_answer", "I could not process your question.")
     if result.get("error") and not answer:
-        answer = f"Sorgu guvenli sekilde tamamlanamadi: {sanitize_text(result['error'])}"
+        answer = f"Sorgu guvenli bir sekilde tamamlanamadi: {sanitize_text(result['error'])}"
 
     return ChatResponse(
         answer=answer,

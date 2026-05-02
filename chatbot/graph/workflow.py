@@ -51,7 +51,7 @@ def after_execute_sql(state: dict) -> str:
 def final_error_agent(state: dict) -> dict:
     return {
         "final_answer": (
-            "Sorgu guvenlik veya dogrulama kontrollerinden gecemedi. "
+            "Sorgu güvenlik veya doğrulama kontrollerinden geçemedi. "
             f"Detay: {sanitize_text(state.get('error', 'unknown error'))}"
         ),
     }

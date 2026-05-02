@@ -1,14 +1,43 @@
-<button class="chat-toggle-btn" (click)="toggleChat()">
-  💬 AI Assistant
+﻿<button class="chat-toggle-btn" (click)="toggleChat()">
+  Chat AI Assistant
 </button>
 
 @if (isChatOpen()) {
-  <section class="chatbot-floating-window">
+  <section class="chatbot-floating-window" [class.fullscreen]="isFullscreen()">
     <header class="chatbot-head">
       <div>
         <h3>AI Analytics Chatbot</h3>
       </div>
-      <button class="ghost-btn" type="button" (click)="toggleChat()">✕</button>
+      <div class="head-actions">
+        <button
+          class="ghost-btn icon-btn"
+          type="button"
+          (click)="toggleFullscreen()"
+          [attr.aria-label]="isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen'"
+          [attr.title]="isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen'"
+        >
+          @if (isFullscreen()) {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 14h2v3h3v2H5v-5zm12 3v-3h2v5h-5v-2h3zM7 7v3H5V5h5v2H7zm12 3h-2V7h-3V5h5v5z"></path>
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 5h6v2H7v4H5V5zm8 0h6v6h-2V7h-4V5zM5 13h2v4h4v2H5v-6zm12 4v-4h2v6h-6v-2h4z"></path>
+            </svg>
+          }
+        </button>
+        <button
+          class="ghost-btn icon-btn"
+          type="button"
+          (click)="toggleChat()"
+          aria-label="Close chat"
+          title="Close chat"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3 1.4 1.4z"></path>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <div class="scope-banner">
@@ -22,6 +51,26 @@
 
     <div class="chat-layout">
       <section class="chat-main card">
+        <section class="sample-prompts">
+          <h4>Ornek sorular — tiklayarak dene:</h4>
+          <div class="prompt-list">
+            @for (prompt of quickPrompts(); track prompt) {
+              <button type="button" (click)="sendPrompt(prompt)" [disabled]="isSending()">{{ prompt }}</button>
+            }
+          </div>
+        </section>
+
+        @if (securityPrompts().length > 0) {
+          <section class="sample-prompts security-scenarios">
+            <h4>Güvenlik senaryoları:</h4>
+            <div class="prompt-list">
+              @for (prompt of securityPrompts(); track prompt) {
+                <button type="button" (click)="sendPrompt(prompt)" [disabled]="isSending()">{{ prompt }}</button>
+              }
+            </div>
+          </section>
+        }
+
         <div class="messages" aria-live="polite">
           @for (message of messages(); track trackByMessageId($index, message)) {
             <article class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">

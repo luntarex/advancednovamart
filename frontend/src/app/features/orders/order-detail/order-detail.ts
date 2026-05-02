@@ -23,6 +23,7 @@ export class OrderDetail {
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
   readonly order = signal<Order | null>(null);
+  readonly orderReceived = signal(false);
 
   readonly role = computed(() => this.auth.getUserRole());
   readonly canManageOrders = computed(() => {
@@ -31,6 +32,42 @@ export class OrderDetail {
   });
   
   readonly canShop = computed(() => this.role() === 'INDIVIDUAL');
+
+  readonly pageTitle = computed(() => (this.orderReceived() ? 'Order received' : 'Order details'));
+
+  readonly itemCount = computed(() =>
+    (this.order()?.items ?? []).reduce((total, item) => total + item.quantity, 0),
+  );
+
+  readonly lineItemsTotal = computed(() =>
+    (this.order()?.items ?? []).reduce((total, item) => total + Number(item.price ?? 0), 0),
+  );
+
+  readonly paymentLabel = computed(() => this.formatPaymentMethod(this.order()?.paymentMethod ?? ''));
+
+  readonly paymentStatus = computed(() => {
+    const method = (this.order()?.paymentMethod ?? '').toUpperCase();
+    if (method.includes('CASH')) {
+      return 'Due on delivery';
+    }
+    if (method.includes('BANK')) {
+      return 'Awaiting transfer';
+    }
+    return this.orderReceived() ? 'Payment recorded' : 'Payment selected';
+  });
+
+  readonly deliveryEstimate = computed(() => {
+    const rawDate = this.order()?.orderDate;
+    const orderDate = rawDate ? new Date(rawDate) : new Date();
+    if (Number.isNaN(orderDate.getTime())) {
+      return '2-4 business days';
+    }
+    const start = new Date(orderDate);
+    const end = new Date(orderDate);
+    start.setDate(start.getDate() + 2);
+    end.setDate(end.getDate() + 4);
+    return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+  });
 
   readonly currentStepIndex = computed(() => {
     const order = this.order();
@@ -59,6 +96,14 @@ export class OrderDetail {
   ];
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.orderReceived.set(
+        params.get('placed') === 'true' ||
+          params.get('payment') === 'success' ||
+          params.has('session_id'),
+      );
+    });
+
     this.route.paramMap.subscribe((params) => {
       const id = Number(params.get('id'));
       if (!Number.isFinite(id) || id <= 0) {
@@ -107,6 +152,18 @@ export class OrderDetail {
         this.isLoading.set(false);
       },
     });
+  }
+
+  private formatPaymentMethod(method: string): string {
+    if (!method) {
+      return 'Not selected';
+    }
+
+    return method
+      .toLowerCase()
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   private getFallbackOrders(): Order[] {

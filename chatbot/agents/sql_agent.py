@@ -4,12 +4,17 @@ SQL agent and execution node.
 from __future__ import annotations
 
 import os
-from langchain_openai import ChatOpenAI
+import re
+from typing import Any
+from llm_provider import get_chat_model
 from db.connection import get_schema, execute_query
 from security import validate_sql_shape, validate_scope
 
-SQL_MODEL = os.getenv("OPENAI_SQL_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1-nano"))
-_llm: ChatOpenAI | None = None
+SQL_MODEL = os.getenv(
+    "SQL_MODEL",
+    os.getenv("OPENAI_SQL_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+)
+_llm: Any = None
 
 SQL_PROMPT = """You are a senior MySQL analytics assistant.
 Convert the question into a single, safe SELECT query.
@@ -41,6 +46,10 @@ Return only SQL.
 
 def sql_agent(state: dict) -> dict:
     question = state["question"]
+    deterministic_sql = _deterministic_sql(question, state)
+    if deterministic_sql:
+        return {"sql_query": deterministic_sql}
+
     schema = get_schema()
 
     response = _get_llm().invoke(
@@ -64,10 +73,29 @@ def sql_agent(state: dict) -> dict:
     return {"sql_query": sql}
 
 
-def _get_llm() -> ChatOpenAI:
+def _deterministic_sql(question: str, state: dict) -> str:
+    normalized = question.lower()
+    role = str(state.get("role", "INDIVIDUAL")).upper()
+
+    if role == "INDIVIDUAL" and "order" in normalized and any(word in normalized for word in ("last", "recent")):
+        limit_match = re.search(r"\b(\d{1,2})\b", normalized)
+        limit = min(int(limit_match.group(1)), 50) if limit_match else 5
+        user_id = int(state.get("user_id", 0))
+        return (
+            "SELECT o.id, o.status, o.grand_total, o.payment_method, o.order_date "
+            "FROM orders o "
+            f"WHERE o.user_id = {user_id} "
+            "ORDER BY o.order_date DESC, o.id DESC "
+            f"LIMIT {limit}"
+        )
+
+    return ""
+
+
+def _get_llm() -> Any:
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=SQL_MODEL, temperature=0)
+        _llm = get_chat_model(SQL_MODEL, temperature=0)
     return _llm
 
 

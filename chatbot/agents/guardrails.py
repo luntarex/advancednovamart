@@ -6,15 +6,22 @@ Guardrails agent.
 from __future__ import annotations
 
 import os
-from langchain_openai import ChatOpenAI
+from typing import Any
+
+from llm_provider import get_chat_model
 from security import detect_prompt_attack
 
-GUARDRAIL_MODEL = os.getenv("OPENAI_GUARDRAIL_MODEL", "gpt-4.1-nano")
-_llm: ChatOpenAI | None = None
+GUARDRAIL_MODEL = os.getenv(
+    "GUARDRAIL_MODEL",
+    os.getenv("OPENAI_GUARDRAIL_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+)
+_llm: Any = None
 
 DOMAIN_HINTS = (
     "product", "order", "sale", "revenue", "customer", "shipment", "review",
     "category", "inventory", "stock", "store", "checkout", "analytics", "dashboard",
+    "urun", "siparis", "satis", "ciro", "musteri", "sevkiyat", "yorum",
+    "kategori", "stok", "magaza", "analitik", "gelir",
 )
 GREETINGS = (
     "hello", "hi", "hey", "good morning", "good afternoon", "good evening", "selam", "merhaba",
@@ -42,10 +49,10 @@ def _cheap_rule_classify(question: str) -> str | None:
     return None
 
 
-def _get_llm() -> ChatOpenAI:
+def _get_llm() -> Any:
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=GUARDRAIL_MODEL, temperature=0)
+        _llm = get_chat_model(GUARDRAIL_MODEL, temperature=0)
     return _llm
 
 

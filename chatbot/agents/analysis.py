@@ -4,11 +4,15 @@ Analysis agent: turns raw query results into human-friendly answer.
 from __future__ import annotations
 
 import os
-from langchain_openai import ChatOpenAI
+from typing import Any
+from llm_provider import get_chat_model
 from security import sanitize_text
 
-ANALYSIS_MODEL = os.getenv("OPENAI_ANALYSIS_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1-nano"))
-_llm: ChatOpenAI | None = None
+ANALYSIS_MODEL = os.getenv(
+    "ANALYSIS_MODEL",
+    os.getenv("OPENAI_ANALYSIS_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+)
+_llm: Any = None
 
 ANALYSIS_PROMPT = """You are a concise e-commerce analyst for NovaMart.
 
@@ -36,8 +40,8 @@ def analysis_agent(state: dict) -> dict:
     return {"final_answer": safe_answer}
 
 
-def _get_llm() -> ChatOpenAI:
+def _get_llm() -> Any:
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=ANALYSIS_MODEL, temperature=0.1)
+        _llm = get_chat_model(ANALYSIS_MODEL, temperature=0.1)
     return _llm

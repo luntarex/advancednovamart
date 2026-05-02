@@ -126,11 +126,11 @@ export class Checkout {
           next: () => {
             this.cartItems.set([]);
             const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id]);
+            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
           },
           error: () => {
             const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id]);
+            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
           },
         });
       },
