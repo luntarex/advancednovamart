@@ -4,6 +4,9 @@ Supports:
 - gemini
 - openai
 - ollama
+
+Default order is Ollama first, Gemini fallback. This keeps local chat fast and
+only spends Gemini quota when the local model is unavailable.
 """
 from __future__ import annotations
 
@@ -57,22 +60,18 @@ class FallbackChatModel:
 
 
 def get_chat_model(model: str, temperature: float = 0) -> Any:
-    provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
-    primary = _create_chat_model(provider=provider, model=model, temperature=temperature)
+    provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
+    primary_model = _resolve_model_for_provider(provider, requested_model=model)
+    primary = _create_chat_model(provider=provider, model=primary_model, temperature=temperature)
 
-    fallback_enabled = os.getenv("LLM_ENABLE_FALLBACK", "true").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
-    fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "ollama").strip().lower()
+    fallback_enabled = _is_truthy(os.getenv("LLM_ENABLE_FALLBACK", "true"))
+    fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "gemini").strip().lower()
     if not fallback_enabled or provider == fallback_provider:
         return primary
 
     fallback_model = os.getenv(
         "LLM_FALLBACK_MODEL",
-        os.getenv("OLLAMA_MODEL", "qwen2.5:7b"),
+        _resolve_model_for_provider(fallback_provider, requested_model=model),
     ).strip()
     if not fallback_model:
         return primary
@@ -83,6 +82,42 @@ def get_chat_model(model: str, temperature: float = 0) -> Any:
         fallback_model=fallback_model,
         temperature=temperature,
     )
+
+
+def _is_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _resolve_model_for_provider(provider: str, requested_model: str) -> str:
+    provider = (provider or "").strip().lower()
+    requested = (requested_model or "").strip()
+
+    if provider == "ollama":
+        return os.getenv("OLLAMA_MODEL", "").strip() or _ollama_safe_model(requested)
+
+    if provider == "gemini":
+        return (
+            os.getenv("GEMINI_MODEL", "").strip()
+            or os.getenv("GOOGLE_MODEL", "").strip()
+            or _gemini_safe_model(requested)
+        )
+
+    if provider == "openai":
+        return os.getenv("OPENAI_MODEL", "").strip() or requested or "gpt-4o-mini"
+
+    return requested
+
+
+def _ollama_safe_model(requested_model: str) -> str:
+    if requested_model and not requested_model.lower().startswith(("gemini-", "gpt-")):
+        return requested_model
+    return "qwen2.5:7b"
+
+
+def _gemini_safe_model(requested_model: str) -> str:
+    if requested_model and requested_model.lower().startswith("gemini-"):
+        return requested_model
+    return "gemini-2.0-flash"
 
 
 def _create_chat_model(provider: str, model: str, temperature: float) -> Any:
@@ -109,7 +144,7 @@ def _create_chat_model(provider: str, model: str, temperature: float) -> Any:
             ) from exc
 
         return ChatOllama(
-            model=os.getenv("OLLAMA_MODEL", model),
+            model=model,
             temperature=temperature,
             base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         )

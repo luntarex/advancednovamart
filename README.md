@@ -22,3 +22,26 @@ docker compose up -d
 ```bash
 docker compose down
 ```
+
+## Chatbot LLM Setup
+
+The chatbot is configured to use Ollama first and Gemini only as fallback.
+
+1. Copy `chatbot/.env.example` to `chatbot/.env`.
+2. Start Ollama:
+
+```bash
+ollama serve
+```
+
+3. Pull the default local model:
+
+```bash
+ollama pull qwen2.5:7b
+```
+
+4. Add your Gemini key to `chatbot/.env` if you want fallback:
+
+```bash
+GOOGLE_API_KEY=your_gemini_key_here
+```
