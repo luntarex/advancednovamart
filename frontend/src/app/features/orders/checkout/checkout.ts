@@ -128,6 +128,12 @@ export class Checkout {
         this.cartService.clearCart().subscribe({
           next: () => {
             this.cartItems.set([]);
+            const id = createdOrder?.id ?? 1;
+            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
+          },
+          error: () => {
+            const id = createdOrder?.id ?? 1;
+            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
             if (payload.paymentMethod === 'CREDIT_CARD') {
               this.submitSuccess.set('Redirecting to secure payment...');
               this.paymentService.createCheckoutSession(id).subscribe({

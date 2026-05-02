@@ -4,11 +4,15 @@ Error-fix agent for SQL retries.
 from __future__ import annotations
 
 import os
-from langchain_openai import ChatOpenAI
+from typing import Any
+from llm_provider import get_chat_model
 from db.connection import get_schema
 
-ERROR_MODEL = os.getenv("OPENAI_ERROR_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1-nano"))
-_llm: ChatOpenAI | None = None
+ERROR_MODEL = os.getenv(
+    "ERROR_MODEL",
+    os.getenv("OPENAI_ERROR_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+)
+_llm: Any = None
 
 ERROR_FIX_PROMPT = """You are fixing a failed MySQL SELECT query.
 
@@ -59,8 +63,8 @@ def error_agent(state: dict) -> dict:
     return {"sql_query": fixed_sql.strip().rstrip(";")}
 
 
-def _get_llm() -> ChatOpenAI:
+def _get_llm() -> Any:
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=ERROR_MODEL, temperature=0)
+        _llm = get_chat_model(ERROR_MODEL, temperature=0)
     return _llm

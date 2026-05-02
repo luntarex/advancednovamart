@@ -8,4 +8,6 @@ import lombok.Data;
 public class ChatResponse {
     private String answer;
     private String visualizationCode;
+    private String sqlQuery;
+    private String blockedReason;
 }

@@ -56,6 +56,8 @@ public class ChatService {
                 return ChatResponse.builder()
                         .answer(String.valueOf(result.getOrDefault("answer", "No response from AI service.")))
                         .visualizationCode(String.valueOf(result.getOrDefault("visualization_code", "")))
+                        .sqlQuery(String.valueOf(result.getOrDefault("sql_query", "")))
+                        .blockedReason(String.valueOf(result.getOrDefault("blocked_reason", "")))
                         .build();
             }
 
@@ -63,6 +65,7 @@ public class ChatService {
             // If Python service is down, return a friendly error
             return ChatResponse.builder()
                     .answer("AI chatbot service is currently unavailable. Error: " + e.getMessage())
+                    .blockedReason("spring_proxy_error")
                     .build();
         }
 

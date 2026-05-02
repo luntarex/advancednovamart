@@ -34,6 +34,7 @@ export class ChatWindow implements OnDestroy {
   readonly userId = computed(() => this.auth.getUserId() ?? 'guest');
 
   readonly isChatOpen = signal(false);
+  readonly isFullscreen = signal(false);
   readonly draftQuestion = signal('');
   readonly isSending = signal(false);
   readonly errorMessage = signal('');
@@ -134,6 +135,13 @@ export class ChatWindow implements OnDestroy {
 
   toggleChat(): void {
     this.isChatOpen.update((v) => !v);
+    if (!this.isChatOpen()) {
+      this.isFullscreen.set(false);
+    }
+  }
+
+  toggleFullscreen(): void {
+    this.isFullscreen.update((v) => !v);
   }
 
   send(): void {
