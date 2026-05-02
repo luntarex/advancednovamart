@@ -9,6 +9,7 @@ import os
 import unicodedata
 from typing import Any
 
+from error_messages import message_for
 from llm_provider import get_chat_model
 from security import detect_prompt_attack
 
@@ -25,7 +26,8 @@ DOMAIN_HINTS = (
     "satilan", "satan", "satici", "saticilar",
     "musteri", "sevkiyat", "yorum", "kategori", "stok", "magaza", "analitik",
     "gelir", "harcama", "harca", "harcadim", "alisveris", "odeme", "kargo",
-    "teslimat", "fatura", "sepet", "iade", "indirim",
+    "teslimat", "fatura", "sepet", "iade", "indirim", "veri", "veriler",
+    "rapor", "performans",
 )
 GREETINGS = (
     "hello", "hi", "hey", "good morning", "good afternoon", "good evening", "selam", "merhaba",
@@ -94,10 +96,7 @@ def guardrails_agent(state: dict) -> dict:
             "is_in_scope": False,
             "is_security_violation": True,
             "blocked_reason": reason,
-            "final_answer": (
-                "Bu istek güvenlik politikalarına takıldı. "
-                "Yalnızca rolünüze uygun e-ticaret analiz sorularını yanıtlayabilirim."
-            ),
+            "final_answer": message_for(reason),
         }
 
     rule_result = _cheap_rule_classify(question)
@@ -132,8 +131,5 @@ def guardrails_agent(state: dict) -> dict:
         "is_in_scope": False,
         "is_security_violation": False,
         "blocked_reason": "",
-        "final_answer": (
-            "Bu asistan yalnızca e-ticaret verileri için kullanılır. "
-            "Örnek: 'Bu ay en çok satan 5 ürün nedir?'"
-        ),
+        "final_answer": message_for("out_of_scope"),
     }

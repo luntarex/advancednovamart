@@ -38,6 +38,10 @@ Rules:
 - Keep required role scope constraints
 - For individual users, keep user_id = session user_id scope
 - For Turkish order-list questions, include products/order_items when useful
+- If Error is EMPTY_RESULT, do not give up. Rewrite the query more broadly while preserving the user's intent and role scope.
+- For EMPTY_RESULT caused by relative dates such as "bu ay", "geçen ay", "son zamanlarda", "recent", or "last 30 days", anchor the period to the latest available order_date in the database instead of wall-clock CURRENT_DATE.
+- For trend, anomaly, increase/decrease, comparison, or rate questions, use conditional aggregation and comparable recent/previous windows so the answer can infer from the latest available data.
+- Prefer broader aggregate windows over exact empty filters, but never expose private rows outside the role scope.
 
 Return only SQL.
 """

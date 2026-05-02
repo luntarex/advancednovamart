@@ -54,7 +54,10 @@ public class ChatService {
 
             if (result != null) {
                 return ChatResponse.builder()
-                        .answer(String.valueOf(result.getOrDefault("answer", "No response from AI service.")))
+                        .answer(String.valueOf(result.getOrDefault(
+                                "answer",
+                                "Chatbot şu anda yanıt üretemedi. Lütfen biraz sonra tekrar deneyin."
+                        )))
                         .visualizationCode(String.valueOf(result.getOrDefault("visualization_code", "")))
                         .sqlQuery(String.valueOf(result.getOrDefault("sql_query", "")))
                         .blockedReason(String.valueOf(result.getOrDefault("blocked_reason", "")))
@@ -64,13 +67,13 @@ public class ChatService {
         } catch (Exception e) {
             // If Python service is down, return a friendly error
             return ChatResponse.builder()
-                    .answer("AI chatbot service is currently unavailable. Error: " + e.getMessage())
+                    .answer("Chatbot servisine şu anda ulaşılamıyor. Lütfen Python chatbot servisinin çalıştığından emin olup tekrar deneyin.")
                     .blockedReason("spring_proxy_error")
                     .build();
         }
 
         return ChatResponse.builder()
-                .answer("Unable to process your question.")
+                .answer("Chatbot şu anda sorunuzu işleyemedi. Lütfen biraz sonra tekrar deneyin.")
                 .build();
     }
 

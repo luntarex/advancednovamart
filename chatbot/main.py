@@ -3,19 +3,20 @@ FastAPI entry point for the LangGraph chatbot service.
 """
 from __future__ import annotations
 
-import os
 import time
 from collections import defaultdict, deque
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from graph.workflow import workflow
-from security import sanitize_text
+from error_messages import message_for
 
+load_dotenv(Path(__file__).resolve().parent / ".env")
 load_dotenv()
+from graph.workflow import workflow
 
 app = FastAPI(
     title="NovaMart AI Chatbot",
@@ -74,7 +75,7 @@ async def ask(request: ChatRequest):
     key = _rate_limit_key(request)
     if _is_rate_limited(key):
         return ChatResponse(
-            answer="Çok fazla istek algılandı. Lütfen bir süre sonra tekrar deneyin.",
+            answer=message_for("rate_limit"),
             blocked_reason="rate_limit",
         )
 
@@ -104,34 +105,14 @@ async def ask(request: ChatRequest):
     try:
         result = workflow.invoke(initial_state)
     except Exception:
-        provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
-        fallback_enabled = os.getenv("LLM_ENABLE_FALLBACK", "true").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
-        fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "ollama").strip().lower()
-        if provider == "ollama":
-            hint = "Ollama'yı başlatın (ollama serve) ve modeli indirin (örnek: ollama pull qwen2.5:7b)."
-        elif provider == "gemini" and fallback_enabled and fallback_provider == "ollama":
-            hint = (
-                "Gemini ve Ollama fallback ikisi de yanıt veremedi. GOOGLE_API_KEY'i kontrol edin; "
-                "ayrıca Ollama'yı başlatın (ollama serve) ve modeli indirin (ollama pull qwen2.5:7b)."
-            )
-        elif provider == "gemini":
-            hint = "GOOGLE_API_KEY, internet erişimi ve Gemini model adını kontrol edin."
-        else:
-            hint = "OPENAI_API_KEY, internet erişimi ve veritabanı ayarlarınızı kontrol edin."
-
         return ChatResponse(
-            answer=f"Chatbot şu anda isteği işleyemedi. {hint}",
+            answer=message_for("runtime_error"),
             blocked_reason="runtime_error",
         )
 
-    answer = result.get("final_answer", "I could not process your question.")
+    answer = result.get("final_answer", message_for("unknown"))
     if result.get("error") and not answer:
-        answer = f"Sorgu güvenli bir şekilde tamamlanamadı: {sanitize_text(result['error'])}"
+        answer = message_for(str(result["error"]))
 
     return ChatResponse(
         answer=answer,

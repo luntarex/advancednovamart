@@ -75,7 +75,17 @@
 
         <div class="messages" aria-live="polite">
           @for (message of messages(); track trackByMessageId($index, message)) {
-            <article class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+            <article
+              class="message"
+              [class.user]="message.role === 'user'"
+              [class.assistant]="message.role === 'assistant'"
+              [class.security-alert]="isSecurityBlocked(message)"
+              [class.access-denied]="isAccessDenied(message)"
+              [class.validation-alert]="isValidationBlocked(message)"
+            >
+              @if (message.role === 'assistant' && blockedBadgeLabel(message)) {
+                <strong class="message-badge">{{ blockedBadgeLabel(message) }}</strong>
+              }
               <p>{{ message.content }}</p>
               <small>{{ message.timestamp | date:'HH:mm' }}</small>
             </article>

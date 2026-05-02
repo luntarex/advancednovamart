@@ -327,6 +327,48 @@
   color: var(--text-main);
 }
 
+.message.security-alert {
+  border-color: rgba(220, 38, 38, 0.55);
+  background: rgba(254, 242, 242, 0.98);
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.message.access-denied {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(255, 251, 235, 0.98);
+  box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+.message.validation-alert {
+  border-color: rgba(79, 70, 229, 0.4);
+  background: rgba(238, 242, 255, 0.95);
+  box-shadow: inset 4px 0 0 var(--primary-action);
+}
+
+.message-badge {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.message.security-alert .message-badge {
+  background: #dc2626;
+  color: white;
+}
+
+.message.access-denied .message-badge {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.message.validation-alert .message-badge {
+  background: var(--primary-action);
+  color: var(--text-on-action);
+}
+
 .message.typing p {
   color: var(--text-muted);
   font-style: italic;

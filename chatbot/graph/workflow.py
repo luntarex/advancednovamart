@@ -1,81 +1,46 @@
 """
-Workflow — The Assembly Line.
-
-This is where we wire all the agents together using LangGraph's StateGraph.
-It defines: which agent runs first, what happens next, and how errors are handled.
+LangGraph workflow for the NovaMart analytics chatbot.
 """
-from langgraph.graph import StateGraph, END
-from agents.state import AgentState
-from agents.guardrails import guardrails_agent
-from agents.sql_agent import sql_agent, execute_sql
-from agents.error_agent import error_agent
+from langgraph.graph import END, StateGraph
+
 from agents.analysis import analysis_agent
+from agents.error_agent import error_agent
+from agents.guardrails import guardrails_agent
+from agents.sql_agent import execute_sql, sql_agent
+from agents.state import AgentState
 from agents.visualization import visualization_agent
-from security import sanitize_text
+from error_messages import is_security_block, message_for
 
-
-# ──────────────────────────────────────────────────────────────────────
-# CONDITIONAL EDGE FUNCTIONS
-# These decide "where to go next" based on the current state
-# ──────────────────────────────────────────────────────────────────────
 
 def after_guardrails(state: dict) -> str:
-    """
-    After the guardrails agent:
-    - If greeting or out_of_scope → END (we already have a final_answer)
-    - If in_scope → go to SQL agent
-    """
     if state.get("is_in_scope"):
         return "sql_agent"
-    else:
-        return END
+    return END
 
 
 def after_execute_sql(state: dict) -> str:
-    """
-    After executing SQL:
-    - If there's an error AND we haven't retried 3 times → go to error agent
-    - If there's an error AND we've retried 3 times → give up, go to END
-    - If success → go to analysis agent
-    """
-    if state.get("error"):
+    error = str(state.get("error", ""))
+    if error:
+        if error.startswith("ACCESS_DENIED") or is_security_block(error):
+            return "final_error"
         if state.get("iteration_count", 0) < 3:
             return "error_agent"
-        else:
-            # Give up after 3 retries
-            return "final_error"
-    else:
-        return "analysis_agent"
+        return "final_error"
+    return "analysis_agent"
 
 
 def final_error_agent(state: dict) -> dict:
+    error = str(state.get("error", "unknown error"))
+
     return {
-        "final_answer": (
-            "Sorgu güvenlik veya doğrulama kontrollerinden geçemedi. "
-            f"Detay: {sanitize_text(state.get('error', 'unknown error'))}"
-        ),
+        "final_answer": message_for(error),
+        "blocked_reason": error,
     }
 
 
-# ──────────────────────────────────────────────────────────────────────
-# BUILD THE GRAPH
-# ──────────────────────────────────────────────────────────────────────
-
 def build_graph():
-    """
-    Constructs the LangGraph state machine.
-
-    Visual flow:
-        START → guardrails → [in_scope?] → sql_agent → execute_sql
-                                                          ↓
-                                                    [error?] → error_agent → execute_sql (retry)
-                                                          ↓
-                                                    analysis → visualization → END
-    """
-    # 1. Create the graph with our state schema
     graph = StateGraph(AgentState)
 
-    # 2. Add all nodes (agents)
     graph.add_node("guardrails", guardrails_agent)
     graph.add_node("sql_agent", sql_agent)
     graph.add_node("execute_sql", execute_sql)
@@ -84,29 +49,16 @@ def build_graph():
     graph.add_node("visualization_agent", visualization_agent)
     graph.add_node("final_error", final_error_agent)
 
-    # 3. Set the entry point
     graph.set_entry_point("guardrails")
-
-    # 4. Add conditional edges
     graph.add_conditional_edges("guardrails", after_guardrails)
-
-    # 5. Add normal edges (A → always B)
     graph.add_edge("sql_agent", "execute_sql")
-
-    # 6. After SQL execution, decide: error → retry, or success → analyze
     graph.add_conditional_edges("execute_sql", after_execute_sql)
-
-    # 7. Error agent → retry SQL execution
     graph.add_edge("error_agent", "execute_sql")
-
-    # 8. Analysis → Visualization → END
     graph.add_edge("analysis_agent", "visualization_agent")
     graph.add_edge("visualization_agent", END)
     graph.add_edge("final_error", END)
 
-    # 9. Compile the graph (finalize it, make it runnable)
     return graph.compile()
 
 
-# Create a single instance to reuse
 workflow = build_graph()

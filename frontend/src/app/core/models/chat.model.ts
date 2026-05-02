@@ -3,6 +3,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   visualizationCode?: string;
+  blockedReason?: string;
   timestamp: Date;
 }
 

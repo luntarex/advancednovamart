@@ -166,8 +166,9 @@ export class ChatWindow implements OnDestroy {
     this.chatService.ask({ question: scopedQuestion, sessionId: this.sessionId() }).subscribe({
       next: (response) => {
         this.streamAssistantMessage(
-          response.answer || 'I could not generate a detailed response.',
+          response.answer || 'Şu anda ayrıntılı bir yanıt üretemedim. Lütfen biraz sonra tekrar deneyin.',
           response.visualizationCode,
+          response.blockedReason,
         );
       },
       error: () => {
@@ -175,10 +176,11 @@ export class ChatWindow implements OnDestroy {
           id: this.createId(),
           role: 'assistant',
           content:
-            'The live AI service is currently unavailable. I saved your chat session and you can retry. For now, I can still guide you based on your role scope.',
+            'Chatbot servisine şu anda ulaşılamıyor. Lütfen servislerin çalıştığından emin olup biraz sonra tekrar deneyin.',
+          blockedReason: 'spring_proxy_error',
           timestamp: new Date(),
         });
-        this.errorMessage.set('Chat service unavailable right now. Showing fallback assistant response.');
+        this.errorMessage.set('Chatbot servisine şu anda ulaşılamıyor.');
         this.finishAgentProgress(false);
         this.isSending.set(false);
       },
@@ -195,6 +197,39 @@ export class ChatWindow implements OnDestroy {
 
   trackByMessageId(_: number, message: ChatMessage): string {
     return message.id;
+  }
+
+  isSecurityBlocked(message: ChatMessage): boolean {
+    return [
+      'prompt_injection',
+      'prompt_leak_attempt',
+      'SQL_INJECTION',
+      'SQL_ONLY_SELECT',
+      'SQL_SYSTEM_SCHEMA',
+      'SQL_SENSITIVE_COLUMN',
+    ].includes(message.blockedReason ?? '');
+  }
+
+  isAccessDenied(message: ChatMessage): boolean {
+    return message.blockedReason?.startsWith('ACCESS_DENIED') ?? false;
+  }
+
+  isValidationBlocked(message: ChatMessage): boolean {
+    const reason = message.blockedReason ?? '';
+    return reason.startsWith('SQL_') && !this.isSecurityBlocked(message);
+  }
+
+  blockedBadgeLabel(message: ChatMessage): string {
+    if (this.isSecurityBlocked(message)) {
+      return 'Yasaklı güvenlik isteği';
+    }
+    if (this.isAccessDenied(message)) {
+      return 'Erişim reddedildi';
+    }
+    if (this.isValidationBlocked(message)) {
+      return 'Güvenlik kontrolü';
+    }
+    return '';
   }
 
   private pushMessage(message: ChatMessage): void {
@@ -259,7 +294,7 @@ export class ChatWindow implements OnDestroy {
     }
   }
 
-  private streamAssistantMessage(answer: string, visualizationCode?: string): void {
+  private streamAssistantMessage(answer: string, visualizationCode?: string, blockedReason?: string): void {
     this.clearStreamTimer();
     const messageId = this.createId();
     const fullText = answer.trim();
@@ -268,6 +303,7 @@ export class ChatWindow implements OnDestroy {
       role: 'assistant',
       content: '',
       visualizationCode,
+      blockedReason,
       timestamp: new Date(),
     });
 
