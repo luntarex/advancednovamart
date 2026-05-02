@@ -16,6 +16,17 @@ public class PaymentController {
 
     private final StripeService stripeService;
 
+    @PostMapping("/create-payment-intent")
+    public ResponseEntity<Map<String, String>> createPaymentIntent(@RequestBody Map<String, Long> payload) {
+        Long orderId = payload.get("orderId");
+        try {
+            String clientSecret = stripeService.createPaymentIntent(orderId);
+            return ResponseEntity.ok(Map.of("clientSecret", clientSecret));
+        } catch (StripeException e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/create-checkout-session")
     public ResponseEntity<Map<String, String>> createCheckoutSession(@RequestBody Map<String, Long> payload, Authentication authentication) {
         Long orderId = payload.get("orderId");

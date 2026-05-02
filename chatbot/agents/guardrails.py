@@ -6,6 +6,7 @@ Guardrails agent.
 from __future__ import annotations
 
 import os
+import unicodedata
 from typing import Any
 
 from llm_provider import get_chat_model
@@ -20,14 +21,19 @@ _llm: Any = None
 DOMAIN_HINTS = (
     "product", "order", "sale", "revenue", "customer", "shipment", "review",
     "category", "inventory", "stock", "store", "checkout", "analytics", "dashboard",
-    "urun", "siparis", "satis", "ciro", "musteri", "sevkiyat", "yorum",
-    "kategori", "stok", "magaza", "analitik", "gelir",
+    "urun", "urunler", "siparis", "siparisim", "siparisler", "satis", "ciro",
+    "satilan", "satan", "satici", "saticilar",
+    "musteri", "sevkiyat", "yorum", "kategori", "stok", "magaza", "analitik",
+    "gelir", "harcama", "harca", "harcadim", "alisveris", "odeme", "kargo",
+    "teslimat", "fatura", "sepet", "iade", "indirim",
 )
 GREETINGS = (
     "hello", "hi", "hey", "good morning", "good afternoon", "good evening", "selam", "merhaba",
 )
 
 CLASSIFY_PROMPT = """You are a strict classifier for an e-commerce analytics chatbot.
+The user will mostly ask in Turkish. Treat Turkish e-commerce questions as in_scope.
+Understand Turkish terms including sipariş, satış, ürün, müşteri, harcama, alışveriş, ödeme, kargo, teslimat, stok, kategori, sepet, iade, indirim.
 
 Return exactly one of these labels:
 - greeting
@@ -37,9 +43,31 @@ Return exactly one of these labels:
 Question: {question}
 """
 
+TURKISH_TRANSLATION = str.maketrans({
+    "ç": "c",
+    "Ç": "c",
+    "ğ": "g",
+    "Ğ": "g",
+    "ı": "i",
+    "I": "i",
+    "İ": "i",
+    "ö": "o",
+    "Ö": "o",
+    "ş": "s",
+    "Ş": "s",
+    "ü": "u",
+    "Ü": "u",
+})
+
+
+def _normalize_text(value: str) -> str:
+    translated = value.translate(TURKISH_TRANSLATION)
+    ascii_text = unicodedata.normalize("NFKD", translated).encode("ascii", "ignore").decode("ascii")
+    return ascii_text.strip().lower()
+
 
 def _cheap_rule_classify(question: str) -> str | None:
-    q = (question or "").strip().lower()
+    q = _normalize_text(question or "")
     if not q:
         return "out_of_scope"
     if any(token in q for token in GREETINGS) and len(q.split()) <= 8:
@@ -67,8 +95,8 @@ def guardrails_agent(state: dict) -> dict:
             "is_security_violation": True,
             "blocked_reason": reason,
             "final_answer": (
-                "Bu istek guvenlik politikalarina takildi. "
-                "Yalnizca rolunuze uygun e-ticaret analiz sorularini yanitlayabilirim."
+                "Bu istek güvenlik politikalarına takıldı. "
+                "Yalnızca rolünüze uygun e-ticaret analiz sorularını yanıtlayabilirim."
             ),
         }
 
@@ -86,8 +114,8 @@ def guardrails_agent(state: dict) -> dict:
             "is_security_violation": False,
             "blocked_reason": "",
             "final_answer": (
-                "Merhaba. NovaMart AI Veri Asistani olarak satis, siparis, stok, musteri ve sevkiyat "
-                "analizlerinde yardimci olabilirim."
+                "Merhaba. NovaMart AI veri asistanı olarak satış, sipariş, stok, müşteri ve sevkiyat "
+                "analizlerinde yardımcı olabilirim."
             ),
         }
 
@@ -105,7 +133,7 @@ def guardrails_agent(state: dict) -> dict:
         "is_security_violation": False,
         "blocked_reason": "",
         "final_answer": (
-            "Bu asistan yalnizca e-ticaret verileri icin kullanilir. "
-            "Ornek: 'Bu ay en cok satan 5 urun nedir?'"
+            "Bu asistan yalnızca e-ticaret verileri için kullanılır. "
+            "Örnek: 'Bu ay en çok satan 5 ürün nedir?'"
         ),
     }

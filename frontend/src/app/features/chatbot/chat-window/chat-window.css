@@ -31,8 +31,8 @@
   border: 1px solid var(--border-light);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  display: grid;
-  grid-template-rows: auto auto auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0;
   z-index: 9998;
   overflow: hidden;
@@ -121,11 +121,14 @@
   background: rgba(244, 63, 94, 0.08);
   border-bottom: 1px solid rgba(244, 63, 94, 0.24);
   padding: 0.55rem 0.7rem;
+  flex: 0 0 auto;
 }
 
 .chat-layout {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -213,23 +216,57 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   padding: 1rem;
   gap: 0.75rem;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sample-prompts {
   border: 1px solid var(--border-light);
   border-radius: 10px;
   background: var(--bg-secondary);
-  padding: 0.65rem;
+  padding: 0;
+  overflow: hidden;
 }
 
-.sample-prompts h4 {
-  margin: 0 0 0.45rem;
+.prompt-dock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+.sample-prompts summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
   color: var(--text-muted);
   font-size: 0.83rem;
-  font-weight: 600;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sample-prompts summary::-webkit-details-marker {
+  display: none;
+}
+
+.sample-prompts summary::after {
+  content: "+";
+  color: var(--primary-action);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sample-prompts[open] summary::after {
+  content: "-";
+}
+
+.sample-prompts .prompt-list {
+  padding: 0 0.65rem 0.65rem;
 }
 
 .security-scenarios {
@@ -243,6 +280,7 @@
 
 .messages {
   flex: 1;
+  min-height: 260px;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   padding: 0.6rem;
@@ -371,12 +409,14 @@
   grid-template-columns: 1fr auto;
   gap: 0.6rem;
   align-items: end;
+  flex: 0 0 auto;
 }
 
 .composer textarea {
   width: 100%;
   resize: vertical;
-  min-height: 80px;
+  min-height: 64px;
+  max-height: 120px;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   background: var(--bg-primary);
@@ -436,8 +476,8 @@
     grid-template-columns: 1fr;
   }
 
-  .chat-main {
-    grid-template-rows: minmax(260px, 1fr) auto auto;
+  .prompt-dock {
+    grid-template-columns: 1fr;
   }
 
   .composer {

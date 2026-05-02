@@ -1,8 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import type { StripeCardCvcElement, StripeCardExpiryElement, StripeCardNumberElement, StripeElements } from '@stripe/stripe-js';
 import { SavedAddress } from '../../../core/models/address.model';
 import { CartItem } from '../../../core/models/cart.model';
 import { AddressService } from '../../../core/services/address/address.service';
@@ -18,7 +19,11 @@ import { DropdownComponent, DropdownOption } from '../../../shared/components/dr
   templateUrl: './checkout.html',
   styleUrl: './checkout.css',
 })
-export class Checkout {
+export class Checkout implements AfterViewInit {
+  @ViewChild('cardNumberElementContainer') private cardNumberElementContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('cardExpiryElementContainer') private cardExpiryElementContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('cardCvcElementContainer') private cardCvcElementContainer?: ElementRef<HTMLDivElement>;
+
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
@@ -31,6 +36,8 @@ export class Checkout {
   readonly isSubmitting = signal(false);
   readonly submitError = signal('');
   readonly submitSuccess = signal('');
+  readonly cardError = signal('');
+  readonly isCardReady = signal(false);
   readonly addressMessage = signal('');
   readonly savedAddresses = signal<SavedAddress[]>([]);
   readonly selectedAddressId = signal<string | null>(null);
@@ -52,6 +59,9 @@ export class Checkout {
 
   readonly shippingFee = computed(() => (this.subtotal() > 1500 ? 0 : 79));
   readonly grandTotal = computed(() => this.subtotal() + this.shippingFee());
+  readonly selectedPaymentMethod = signal('CREDIT_CARD');
+  readonly isCardPayment = computed(() => this.isCreditCardMethod(this.selectedPaymentMethod()));
+  readonly isBankTransfer = computed(() => this.normalizePaymentMethod(this.selectedPaymentMethod()) === 'BANK_TRANSFER');
 
   readonly form = this.fb.nonNullable.group({
     addressLine: ['', [Validators.required, Validators.minLength(10)]],
@@ -59,6 +69,10 @@ export class Checkout {
     district: ['', [Validators.required]],
     phone: ['', [Validators.required, Validators.minLength(8)]],
     paymentMethod: ['CREDIT_CARD', [Validators.required]],
+    payerFullName: ['', [Validators.required, Validators.minLength(3)]],
+    payerEmail: ['', [Validators.required, Validators.email]],
+    transferReference: [''],
+    deliveryNote: [''],
   });
 
   constructor() {
@@ -86,6 +100,22 @@ export class Checkout {
         this.selectedAddressId.set(this.normalizeAddressId(defaultAddress.id));
         this.applyAddressToForm(defaultAddress);
       });
+
+    this.form.controls.paymentMethod.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        const paymentMethod = value ?? '';
+        this.selectedPaymentMethod.set(paymentMethod);
+        this.syncPaymentValidators(paymentMethod);
+        window.setTimeout(() => this.syncStripeCardElement());
+      });
+
+    this.selectedPaymentMethod.set(this.form.controls.paymentMethod.value);
+    this.syncPaymentValidators(this.form.controls.paymentMethod.value);
+  }
+
+  ngAfterViewInit(): void {
+    window.setTimeout(() => this.syncStripeCardElement());
   }
 
   removeItem(productId: number): void {
@@ -124,34 +154,19 @@ export class Checkout {
     this.orderService.create(payload).subscribe({
       next: (createdOrder) => {
         const id = createdOrder?.id ?? 1;
+        if (this.isCreditCardMethod(payload.paymentMethod)) {
+          this.finishCheckout(id, payload.paymentMethod);
+          return;
+        }
+
         this.submitSuccess.set('Order placed successfully.');
         this.cartService.clearCart().subscribe({
           next: () => {
             this.cartItems.set([]);
-            const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
+            this.finishCheckout(id, payload.paymentMethod);
           },
           error: () => {
-            const id = createdOrder?.id ?? 1;
-            this.router.navigate(['/orders', id], { queryParams: { placed: 'true' } });
-            if (payload.paymentMethod === 'CREDIT_CARD') {
-              this.submitSuccess.set('Redirecting to secure payment...');
-              this.paymentService.createCheckoutSession(id).subscribe({
-                next: (res) => this.paymentService.redirectToStripe(res.url),
-                error: () => this.submitError.set('Payment session failed. Please pay from your orders page.')
-              });
-            } else {
-              this.router.navigate(['/orders', id]);
-            }
-          },
-          error: () => {
-            if (payload.paymentMethod === 'CREDIT_CARD') {
-              this.paymentService.createCheckoutSession(id).subscribe({
-                next: (res) => this.paymentService.redirectToStripe(res.url)
-              });
-            } else {
-              this.router.navigate(['/orders', id]);
-            }
+            this.finishCheckout(id, payload.paymentMethod);
           },
         });
       },
@@ -159,7 +174,6 @@ export class Checkout {
         this.submitError.set('Checkout API is unavailable. Please try again later.');
         this.isSubmitting.set(false);
       },
-      complete: () => this.isSubmitting.set(false),
     });
   }
 
@@ -241,5 +255,209 @@ export class Checkout {
 
   private normalizeAddressId(addressId: string | number): string {
     return String(addressId);
+  }
+
+  private syncPaymentValidators(paymentMethod: string): void {
+    const isCard = this.isCreditCardMethod(paymentMethod);
+    const fullNameControl = this.form.controls.payerFullName;
+    const emailControl = this.form.controls.payerEmail;
+
+    if (isCard) {
+      fullNameControl.clearValidators();
+      emailControl.clearValidators();
+    } else {
+      fullNameControl.setValidators([Validators.required, Validators.minLength(3)]);
+      emailControl.setValidators([Validators.required, Validators.email]);
+    }
+
+    fullNameControl.updateValueAndValidity({ emitEvent: false });
+    emailControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private finishCheckout(orderId: number, paymentMethod: string): void {
+    if (this.isCreditCardMethod(paymentMethod)) {
+      this.confirmInlineCardPayment(orderId);
+      return;
+    }
+
+    this.router.navigate(['/orders', orderId], { queryParams: { placed: 'true' } });
+  }
+
+  private confirmInlineCardPayment(orderId: number): void {
+    if (!this.cardNumberElement) {
+      this.submitError.set('Card form is not ready yet. Please wait a moment and try again.');
+      this.isSubmitting.set(false);
+      return;
+    }
+
+    this.submitSuccess.set('Processing secure card payment...');
+    this.paymentService.createPaymentIntent(orderId).subscribe({
+      next: async (res) => {
+        const stripe = await this.paymentService.stripePromise;
+        if (!stripe || !res?.clientSecret || !this.cardNumberElement) {
+          this.submitError.set('Stripe payment form could not be initialized.');
+          this.isSubmitting.set(false);
+          return;
+        }
+
+        const result = await stripe.confirmCardPayment(res.clientSecret, {
+          payment_method: {
+            card: this.cardNumberElement,
+            billing_details: {
+              name: this.form.controls.payerFullName.value || undefined,
+              email: this.form.controls.payerEmail.value || undefined,
+            },
+          },
+        });
+
+        if (result.error) {
+          this.submitError.set(result.error.message ?? 'Card payment failed. Please check your card details.');
+          this.isSubmitting.set(false);
+          return;
+        }
+
+        this.cartService.clearCart().subscribe({
+          next: () => this.cartItems.set([]),
+          error: () => undefined,
+        });
+        this.router.navigate(['/orders', orderId], { queryParams: { placed: 'true', payment: 'success' } });
+      },
+      error: () => {
+        this.submitError.set('Payment setup failed. Please try again later.');
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+
+  private stripeElements?: StripeElements;
+  private cardNumberElement?: StripeCardNumberElement;
+  private cardExpiryElement?: StripeCardExpiryElement;
+  private cardCvcElement?: StripeCardCvcElement;
+  private readonly cardFieldCompletion = {
+    number: false,
+    expiry: false,
+    cvc: false,
+  };
+
+  private async syncStripeCardElement(): Promise<void> {
+    if (!this.isCardPayment()) {
+      this.destroyStripeCardElements();
+      this.stripeElements = undefined;
+      this.isCardReady.set(false);
+      this.cardError.set('');
+      return;
+    }
+
+    if (
+      !this.cardNumberElementContainer ||
+      !this.cardExpiryElementContainer ||
+      !this.cardCvcElementContainer ||
+      this.cardNumberElement
+    ) {
+      return;
+    }
+
+    const stripe = await this.paymentService.stripePromise;
+    if (!stripe) {
+      this.cardError.set('Stripe could not be loaded. Check the public key and network connection.');
+      return;
+    }
+
+    this.stripeElements = stripe.elements();
+    const cardStyle = {
+      base: {
+        color: '#111827',
+        fontSize: '15px',
+        fontFamily: 'Inter, Segoe UI, system-ui, sans-serif',
+        '::placeholder': {
+          color: '#9ca3af',
+        },
+      },
+    };
+
+    this.cardNumberElement = this.stripeElements.create('cardNumber', {
+      showIcon: true,
+      disableLink: true,
+      placeholder: 'Card number',
+      style: cardStyle,
+    });
+    this.cardExpiryElement = this.stripeElements.create('cardExpiry', {
+      placeholder: 'MM / YY',
+      style: cardStyle,
+    });
+    this.cardCvcElement = this.stripeElements.create('cardCvc', {
+      placeholder: 'CVC',
+      style: cardStyle,
+    });
+
+    this.cardNumberElement.on('change', (event) => {
+      this.cardFieldCompletion.number = event.complete;
+      this.cardError.set(event.error?.message ?? '');
+      this.updateCardReadyState();
+    });
+    this.cardExpiryElement.on('change', (event) => {
+      this.cardFieldCompletion.expiry = event.complete;
+      this.cardError.set(event.error?.message ?? '');
+      this.updateCardReadyState();
+    });
+    this.cardCvcElement.on('change', (event) => {
+      this.cardFieldCompletion.cvc = event.complete;
+      this.cardError.set(event.error?.message ?? '');
+      this.updateCardReadyState();
+    });
+
+    this.cardNumberElement.mount(this.cardNumberElementContainer.nativeElement);
+    this.cardExpiryElement.mount(this.cardExpiryElementContainer.nativeElement);
+    this.cardCvcElement.mount(this.cardCvcElementContainer.nativeElement);
+  }
+
+  private destroyStripeCardElements(): void {
+    this.cardNumberElement?.destroy();
+    this.cardExpiryElement?.destroy();
+    this.cardCvcElement?.destroy();
+    this.cardNumberElement = undefined;
+    this.cardExpiryElement = undefined;
+    this.cardCvcElement = undefined;
+    this.cardFieldCompletion.number = false;
+    this.cardFieldCompletion.expiry = false;
+    this.cardFieldCompletion.cvc = false;
+  }
+
+  private updateCardReadyState(): void {
+    this.isCardReady.set(
+      this.cardFieldCompletion.number &&
+      this.cardFieldCompletion.expiry &&
+      this.cardFieldCompletion.cvc,
+    );
+  }
+
+  private redirectToHostedCheckout(orderId: number): void {
+    this.submitSuccess.set('Redirecting to secure payment...');
+    this.paymentService.createCheckoutSession(orderId).subscribe({
+        next: (res) => {
+          if (res?.url) {
+            this.paymentService.redirectToStripe(res.url);
+            return;
+          }
+
+          this.submitError.set('Payment session did not return a Stripe checkout URL.');
+        },
+        error: () => {
+          this.submitError.set('Payment session failed. You can review the order and try again later.');
+          this.router.navigate(['/orders', orderId], { queryParams: { placed: 'true' } });
+        },
+      });
+  }
+
+  private normalizePaymentMethod(value: string): string {
+    return String(value ?? '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .toUpperCase();
+  }
+
+  private isCreditCardMethod(value: string): boolean {
+    const normalized = this.normalizePaymentMethod(value);
+    return normalized === 'CREDIT_CARD' || normalized === 'DEBIT_CARD' || normalized === 'CARD';
   }
 }

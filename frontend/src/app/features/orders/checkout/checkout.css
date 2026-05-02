@@ -32,7 +32,7 @@
   gap: 1rem;
 }
 
-form {
+.shipping-form {
   border: 1px solid var(--border-light);
   border-radius: 12px;
   background: var(--bg-primary);
@@ -41,10 +41,16 @@ form {
   gap: 0.6rem;
 }
 
-form h3,
+.shipping-form h3,
 .summary h3 {
   margin: 0 0 0.3rem;
   color: var(--text-main);
+}
+
+.checkout-side {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
 }
 
 .saved-address-section {
@@ -174,6 +180,130 @@ small {
   font-size: 0.82rem;
 }
 
+.payment-mode-box,
+.card-checkout-panel {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.payment-mode-box h4,
+.card-checkout-panel h4 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.payment-mode-box p,
+.card-checkout-panel p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.card-checkout-panel {
+  justify-self: stretch;
+  gap: 0.85rem;
+  padding: 0.95rem;
+}
+
+.card-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.card-divider::before,
+.card-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.card-section-title {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.card-section-title p {
+  font-weight: 600;
+}
+
+.stripe-card-grid {
+  display: grid;
+}
+
+.stripe-card-field {
+  min-height: 42px;
+  position: relative;
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.stripe-card-field:focus-within {
+  border-color: var(--primary-action);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+.card-number-field {
+  border-radius: 8px 8px 0 0;
+}
+
+.stripe-card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.stripe-card-row .stripe-card-field {
+  margin-top: -1px;
+}
+
+.stripe-card-row .stripe-card-field:first-child {
+  border-radius: 0 0 0 8px;
+}
+
+.stripe-card-row .stripe-card-field:last-child {
+  border-left: none;
+  border-radius: 0 0 8px 0;
+}
+
+.stripe-card-element {
+  padding: 0.78rem 0.75rem;
+}
+
+.card-number-field .stripe-card-element {
+  padding-right: 0.75rem;
+}
+
+.billing-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.billing-check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary-action);
+}
+
+.card-helper {
+  color: var(--text-muted);
+}
+
 .submit-error {
   color: var(--urgency-accent);
   background: rgba(244, 63, 94, 0.08);
@@ -200,6 +330,10 @@ small {
   padding: 0.68rem 0.9rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.checkout-pay-btn {
+  width: 100%;
 }
 
 .primary-btn:disabled {

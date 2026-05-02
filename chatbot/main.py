@@ -74,7 +74,7 @@ async def ask(request: ChatRequest):
     key = _rate_limit_key(request)
     if _is_rate_limited(key):
         return ChatResponse(
-            answer="Cok fazla istek algilandi. Lutfen bir sure sonra tekrar deneyin.",
+            answer="Çok fazla istek algılandı. Lütfen bir süre sonra tekrar deneyin.",
             blocked_reason="rate_limit",
         )
 
@@ -105,21 +105,33 @@ async def ask(request: ChatRequest):
         result = workflow.invoke(initial_state)
     except Exception:
         provider = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+        fallback_enabled = os.getenv("LLM_ENABLE_FALLBACK", "true").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "ollama").strip().lower()
         if provider == "ollama":
-            hint = "Ollama'yi baslatin (ollama serve) ve modeli indirin (ornek: ollama pull qwen2.5:7b)."
+            hint = "Ollama'yı başlatın (ollama serve) ve modeli indirin (örnek: ollama pull qwen2.5:7b)."
+        elif provider == "gemini" and fallback_enabled and fallback_provider == "ollama":
+            hint = (
+                "Gemini ve Ollama fallback ikisi de yanıt veremedi. GOOGLE_API_KEY'i kontrol edin; "
+                "ayrıca Ollama'yı başlatın (ollama serve) ve modeli indirin (ollama pull qwen2.5:7b)."
+            )
         elif provider == "gemini":
-            hint = "GOOGLE_API_KEY, internet erisimi ve Gemini model adini kontrol edin."
+            hint = "GOOGLE_API_KEY, internet erişimi ve Gemini model adını kontrol edin."
         else:
-            hint = "OPENAI_API_KEY, internet erisimi ve veritabani ayarlarinizi kontrol edin."
+            hint = "OPENAI_API_KEY, internet erişimi ve veritabanı ayarlarınızı kontrol edin."
 
         return ChatResponse(
-            answer=f"Chatbot su anda istegi isleyemedi. {hint}",
+            answer=f"Chatbot şu anda isteği işleyemedi. {hint}",
             blocked_reason="runtime_error",
         )
 
     answer = result.get("final_answer", "I could not process your question.")
     if result.get("error") and not answer:
-        answer = f"Sorgu guvenli bir sekilde tamamlanamadi: {sanitize_text(result['error'])}"
+        answer = f"Sorgu güvenli bir şekilde tamamlanamadı: {sanitize_text(result['error'])}"
 
     return ChatResponse(
         answer=answer,

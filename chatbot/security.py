@@ -54,6 +54,22 @@ SENSITIVE_COLUMNS = {
     "is_admin",
 }
 
+PRIVATE_PUBLIC_AGGREGATE_TABLES = {
+    "users",
+    "customer_profiles",
+    "addresses",
+}
+
+PRIVATE_PUBLIC_AGGREGATE_COLUMNS = {
+    "user_id",
+    "owner_id",
+    "email",
+    "address_line",
+    "phone",
+    "tracking_number",
+    "stripe_session_id",
+}
+
 
 def _contains_any(text: str, patterns: Iterable[str]) -> bool:
     lowered = text.lower()
@@ -79,8 +95,9 @@ def parse_ids_from_scope_filter(sql: str, field: str) -> list[int]:
     - field IN (1,2,3)
     """
     ids: list[int] = []
-    eq_pattern = re.compile(rf"\b{field}\b\s*=\s*(\d+)", re.IGNORECASE)
-    in_pattern = re.compile(rf"\b{field}\b\s+in\s*\(([^)]+)\)", re.IGNORECASE)
+    escaped_field = re.escape(field)
+    eq_pattern = re.compile(rf"\b{escaped_field}\b\s*=\s*(\d+)", re.IGNORECASE)
+    in_pattern = re.compile(rf"\b{escaped_field}\b\s+in\s*\(([^)]+)\)", re.IGNORECASE)
 
     for match in eq_pattern.finditer(sql):
         ids.append(int(match.group(1)))
@@ -110,6 +127,82 @@ def validate_sql_shape(sql: str) -> tuple[bool, str]:
     return True, ""
 
 
+def _compact_sql(sql: str) -> str:
+    return re.sub(r"\s+", " ", sql.strip().lower())
+
+
+def _select_clause(compact_sql: str) -> str:
+    match = re.search(r"\bselect\b(.+?)\bfrom\b", compact_sql, re.IGNORECASE)
+    return match.group(1) if match else compact_sql
+
+
+def _group_by_clause(compact_sql: str) -> str:
+    match = re.search(
+        r"\bgroup\s+by\b(.+?)(\border\s+by\b|\blimit\b|$)",
+        compact_sql,
+        re.IGNORECASE,
+    )
+    return match.group(1) if match else ""
+
+
+def _has_single_store_filter(compact_sql: str) -> bool:
+    return bool(
+        re.search(r"\b(store_id|s\.id|stores\.id)\b\s*=\s*\d+", compact_sql, re.IGNORECASE)
+        or re.search(r"\b(store_id|s\.id|stores\.id)\b\s+in\s*\(\s*\d+", compact_sql, re.IGNORECASE)
+    )
+
+
+def _selects_raw_order_id(select_clause: str) -> bool:
+    has_order_id_alias = re.search(r"\bas\s+order_id\b", select_clause, re.IGNORECASE)
+    selects_o_id = re.search(r"\bo\.id\b", select_clause, re.IGNORECASE)
+    selects_orders_id = re.search(r"\borders\.id\b", select_clause, re.IGNORECASE)
+    counts_o_id = re.search(r"\bcount\s*\(\s*(distinct\s+)?o\.id\s*\)", select_clause, re.IGNORECASE)
+    counts_orders_id = re.search(
+        r"\bcount\s*\(\s*(distinct\s+)?orders\.id\s*\)",
+        select_clause,
+        re.IGNORECASE,
+    )
+
+    if has_order_id_alias:
+        return True
+    if selects_o_id and not counts_o_id:
+        return True
+    if selects_orders_id and not counts_orders_id:
+        return True
+    return False
+
+
+def is_public_aggregate_query(sql: str) -> bool:
+    """
+    Public data is allowed only when it is aggregated and does not expose
+    user/private store/order-level details.
+    """
+    compact = _compact_sql(sql)
+    if not re.search(r"\b(count|sum|avg|min|max)\s*\(", compact, re.IGNORECASE):
+        return False
+
+    if any(re.search(rf"\b{table}\b", compact, re.IGNORECASE) for table in PRIVATE_PUBLIC_AGGREGATE_TABLES):
+        return False
+
+    if any(re.search(rf"\b{column}\b", compact, re.IGNORECASE) for column in PRIVATE_PUBLIC_AGGREGATE_COLUMNS):
+        return False
+
+    # Public seller/product rankings can group by store, but a query filtered to
+    # one store is treated as private store detail unless role scope permits it.
+    if _has_single_store_filter(compact):
+        return False
+
+    select_clause = _select_clause(compact)
+    if _selects_raw_order_id(select_clause):
+        return False
+
+    group_by_clause = _group_by_clause(compact)
+    if re.search(r"\b(o|orders)\.id\b", group_by_clause, re.IGNORECASE):
+        return False
+
+    return True
+
+
 def validate_scope(
     sql: str,
     role: str,
@@ -120,10 +213,17 @@ def validate_scope(
     if normalized_role == "ADMIN":
         return True, ""
 
+    if is_public_aggregate_query(sql):
+        return True, ""
+
     if normalized_role == "CORPORATE":
-        ids = parse_ids_from_scope_filter(sql, "store_id")
+        ids = (
+            parse_ids_from_scope_filter(sql, "store_id")
+            + parse_ids_from_scope_filter(sql, "s.id")
+            + parse_ids_from_scope_filter(sql, "stores.id")
+        )
         if not ids:
-            return False, "Corporate queries must include store_id scope filters."
+            return False, "Corporate private queries must include allowed store_id scope filters."
         disallowed = [sid for sid in ids if sid not in allowed_store_ids]
         if disallowed:
             return False, "Cross-store access attempt blocked."
@@ -132,7 +232,7 @@ def validate_scope(
     # INDIVIDUAL
     user_ids = parse_ids_from_scope_filter(sql, "user_id")
     if not user_ids:
-        return False, "Individual queries must include user_id scope filters."
+        return False, "Individual private queries must include user_id scope filters, or be public aggregate queries."
     if any(uid != user_id for uid in user_ids):
         return False, "Cross-user data access attempt blocked."
     return True, ""

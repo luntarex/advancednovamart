@@ -14,7 +14,8 @@ ERROR_MODEL = os.getenv(
 )
 _llm: Any = None
 
-ERROR_FIX_PROMPT = """You are fixing a failed MySQL SELECT query.
+ERROR_FIX_PROMPT = """You are fixing a failed MySQL SELECT query for NovaMart.
+The original question will usually be in Turkish. Understand Turkish e-commerce terms such as sipariş, ürün, satış, harcama, ödeme, kargo, teslimat, müşteri, stok, kategori, sepet, iade, and indirim.
 
 Original question: {question}
 Role: {role}
@@ -35,6 +36,8 @@ Rules:
 - No SELECT *
 - No UNION/comments/multi statement
 - Keep required role scope constraints
+- For individual users, keep user_id = session user_id scope
+- For Turkish order-list questions, include products/order_items when useful
 
 Return only SQL.
 """

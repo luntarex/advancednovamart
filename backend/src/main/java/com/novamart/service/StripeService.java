@@ -8,9 +8,11 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.PaymentIntent;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
+import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.novamart.enums.OrderStatus;
 import jakarta.annotation.PostConstruct;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +47,26 @@ public class StripeService {
     }
 
     @Transactional
+    public String createPaymentIntent(Long orderId) throws StripeException {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                .setAmount(order.getGrandTotal().multiply(BigDecimal.valueOf(100)).longValue())
+                .setCurrency("try")
+                .addPaymentMethodType("card")
+                .putMetadata("orderId", String.valueOf(orderId))
+                .build();
+
+        PaymentIntent paymentIntent = PaymentIntent.create(params);
+
+        order.setStripeSessionId(paymentIntent.getId());
+        orderRepository.save(order);
+
+        return paymentIntent.getClientSecret();
+    }
+
+    @Transactional
     public String createCheckoutSession(Long orderId) throws StripeException {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
@@ -51,9 +74,14 @@ public class StripeService {
         List<SessionCreateParams.LineItem> sessionItems = new ArrayList<>();
 
         for (OrderItem item : order.getItems()) {
+            long quantity = Math.max(1, item.getQuantity());
+            BigDecimal unitAmount = item.getPrice()
+                    .divide(BigDecimal.valueOf(quantity), 2, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
+
             SessionCreateParams.LineItem.PriceData priceData = SessionCreateParams.LineItem.PriceData.builder()
-                    .setCurrency("usd")
-                    .setUnitAmount(item.getPrice().multiply(BigDecimal.valueOf(100)).longValue())
+                    .setCurrency("try")
+                    .setUnitAmount(unitAmount.longValue())
                     .setProductData(
                             SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                     .setName(item.getProduct().getName())
@@ -63,7 +91,7 @@ public class StripeService {
 
             SessionCreateParams.LineItem sessionItem = SessionCreateParams.LineItem.builder()
                     .setPriceData(priceData)
-                    .setQuantity((long) item.getQuantity())
+                    .setQuantity(quantity)
                     .build();
 
             sessionItems.add(sessionItem);
@@ -72,8 +100,8 @@ public class StripeService {
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl(frontendUrl + "/checkout/success?session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl(frontendUrl + "/checkout/cancel")
+                .setSuccessUrl(frontendUrl + "/orders/" + orderId + "?placed=true&payment=success&session_id={CHECKOUT_SESSION_ID}")
+                .setCancelUrl(frontendUrl + "/orders/" + orderId + "?payment=cancelled")
                 .addAllLineItem(sessionItems)
                 .putMetadata("orderId", String.valueOf(orderId))
                 .build();
@@ -103,6 +131,14 @@ public class StripeService {
                     handleCheckoutSessionCompleted(session);
                 }
             }
+        } else if ("payment_intent.succeeded".equals(event.getType())) {
+            EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+            if (dataObjectDeserializer.getObject().isPresent()) {
+                StripeObject stripeObject = dataObjectDeserializer.getObject().get();
+                if (stripeObject instanceof PaymentIntent paymentIntent) {
+                    handlePaymentIntentSucceeded(paymentIntent);
+                }
+            }
         }
     }
 
@@ -124,5 +160,27 @@ public class StripeService {
                     orderRepository.save(cart);
                 });
         }
+    }
+
+    private void handlePaymentIntentSucceeded(PaymentIntent paymentIntent) {
+        String orderIdStr = paymentIntent.getMetadata().get("orderId");
+        if (orderIdStr != null) {
+            completePaidOrder(Long.parseLong(orderIdStr));
+        }
+    }
+
+    private void completePaidOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        order.setStatus(OrderStatus.PROCESSING);
+        orderRepository.save(order);
+
+        orderRepository.findByUserIdAndStatus(order.getUser().getId(), OrderStatus.CART)
+                .ifPresent(cart -> {
+                    cart.getItems().clear();
+                    cart.setGrandTotal(BigDecimal.ZERO);
+                    orderRepository.save(cart);
+                });
     }
 }

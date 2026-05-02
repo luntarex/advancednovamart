@@ -33,7 +33,15 @@ export class OrderDetail {
   
   readonly canShop = computed(() => this.role() === 'INDIVIDUAL');
 
-  readonly pageTitle = computed(() => (this.orderReceived() ? 'Order received' : 'Order details'));
+  readonly pageTitle = computed(() => {
+    const payment = this.paymentResult();
+    if (payment === 'cancelled') {
+      return 'Payment cancelled';
+    }
+    return this.orderReceived() ? 'Your order has been received' : 'Order details';
+  });
+
+  readonly paymentResult = signal('');
 
   readonly itemCount = computed(() =>
     (this.order()?.items ?? []).reduce((total, item) => total + item.quantity, 0),
@@ -97,6 +105,7 @@ export class OrderDetail {
 
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
+      this.paymentResult.set(params.get('payment') ?? '');
       this.orderReceived.set(
         params.get('placed') === 'true' ||
           params.get('payment') === 'success' ||

@@ -9,8 +9,8 @@
   } @else if (cartItems().length === 0) {
     <p class="status">Your cart is empty. Add products before checkout.</p>
   } @else {
-    <div class="checkout-layout">
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <form class="checkout-layout" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <section class="shipping-form">
         <h3>Shipping Information</h3>
 
         <section class="saved-address-section">
@@ -73,6 +73,91 @@
           formControlName="paymentMethod"
           [options]="paymentOptions"
         ></app-dropdown>
+      </section>
+
+      <aside class="checkout-side">
+        <section class="summary">
+          <h3>Order Summary</h3>
+          <ul>
+            @for (item of cartItems(); track trackByProductId($index, item)) {
+              <li>
+                <div>
+                  <strong>{{ item.name }}</strong>
+                  <p>Qty: {{ item.quantity }}</p>
+                </div>
+                <div class="price-col">
+                  <span>{{ (item.unitPrice * item.quantity) | currency:'TRY':'symbol':'1.0-0' }}</span>
+                  <button type="button" (click)="removeItem(item.productId)">Remove</button>
+                </div>
+              </li>
+            }
+          </ul>
+
+          <div class="totals">
+            <p><span>Subtotal</span><strong>{{ subtotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+            <p><span>Shipping</span><strong>{{ shippingFee() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+            <p class="grand"><span>Total</span><strong>{{ grandTotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
+          </div>
+        </section>
+
+        @if (isCardPayment()) {
+          <section class="card-checkout-panel">
+            <div class="card-divider"><span>Or pay with card</span></div>
+
+            <div class="card-section-title">
+              <h4>Payment details</h4>
+              <p>Card information</p>
+            </div>
+
+            <div class="stripe-card-grid">
+              <div class="stripe-card-field card-number-field">
+                <div #cardNumberElementContainer class="stripe-card-element"></div>
+              </div>
+              <div class="stripe-card-row">
+                <div class="stripe-card-field">
+                  <div #cardExpiryElementContainer class="stripe-card-element"></div>
+                </div>
+                <div class="stripe-card-field">
+                  <div #cardCvcElementContainer class="stripe-card-element"></div>
+                </div>
+              </div>
+            </div>
+
+            <label class="billing-check">
+              <input type="checkbox" checked />
+              <span>Billing address is same as shipping</span>
+            </label>
+
+            @if (cardError()) {
+              <small>{{ cardError() }}</small>
+            }
+            @if (!isCardReady()) {
+              <p class="card-helper">Enter your card details to complete payment securely.</p>
+            }
+          </section>
+        } @else {
+          <section class="payment-mode-box">
+            <h4>Manual Payment Details</h4>
+            <div class="row">
+              <div>
+                <label for="payerFullName">Payer Full Name</label>
+                <input id="payerFullName" type="text" formControlName="payerFullName" placeholder="Full name for payment confirmation" />
+              </div>
+              <div>
+                <label for="payerEmail">Payer Email</label>
+                <input id="payerEmail" type="email" formControlName="payerEmail" placeholder="name@example.com" />
+              </div>
+            </div>
+
+            @if (isBankTransfer()) {
+              <label for="transferReference">Transfer Reference</label>
+              <input id="transferReference" type="text" formControlName="transferReference" placeholder="Optional bank transfer reference" />
+            }
+
+            <label for="deliveryNote">Delivery Note</label>
+            <input id="deliveryNote" type="text" formControlName="deliveryNote" placeholder="Optional delivery instruction" />
+          </section>
+        }
 
         @if (submitError()) {
           <p class="submit-error">{{ submitError() }}</p>
@@ -82,34 +167,14 @@
           <p class="submit-success">{{ submitSuccess() }}</p>
         }
 
-        <button class="primary-btn" type="submit" [disabled]="isSubmitting()">
-          @if (isSubmitting()) { Placing order... } @else { Place Order }
-        </button>
-      </form>
-
-      <aside class="summary">
-        <h3>Order Summary</h3>
-        <ul>
-          @for (item of cartItems(); track trackByProductId($index, item)) {
-            <li>
-              <div>
-                <strong>{{ item.name }}</strong>
-                <p>Qty: {{ item.quantity }}</p>
-              </div>
-              <div class="price-col">
-                <span>{{ (item.unitPrice * item.quantity) | currency:'TRY':'symbol':'1.0-0' }}</span>
-                <button type="button" (click)="removeItem(item.productId)">Remove</button>
-              </div>
-            </li>
+        <button class="primary-btn checkout-pay-btn" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            @if (isCardPayment()) { Processing payment... } @else { Placing order... }
+          } @else {
+            @if (isCardPayment()) { Pay {{ grandTotal() | currency:'TRY':'symbol':'1.0-0' }} } @else { Place Order }
           }
-        </ul>
-
-        <div class="totals">
-          <p><span>Subtotal</span><strong>{{ subtotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
-          <p><span>Shipping</span><strong>{{ shippingFee() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
-          <p class="grand"><span>Total</span><strong>{{ grandTotal() | currency:'TRY':'symbol':'1.0-0' }}</strong></p>
-        </div>
+        </button>
       </aside>
-    </div>
+    </form>
   }
 </section>
