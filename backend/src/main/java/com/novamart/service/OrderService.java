@@ -208,6 +208,51 @@ public class OrderService {
         });
     }
 
+    @Transactional
+    public OrderResponse checkoutCart(Long userId) {
+        Order cart = orderRepository.findByUserIdAndStatus(userId, OrderStatus.CART)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user id: " + userId));
+        
+        if (cart.getItems().isEmpty()) {
+            throw new IllegalStateException("Cart is empty");
+        }
+
+        // Create a new PENDING order from cart items
+        Order order = Order.builder()
+                .user(cart.getUser())
+                .status(OrderStatus.PENDING)
+                .paymentMethod("CREDIT_CARD")
+                .grandTotal(cart.getGrandTotal())
+                .build();
+        
+        // Clone items and reduce stock
+        for (OrderItem cartItem : cart.getItems()) {
+            Product product = cartItem.getProduct();
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
+                throw new IllegalStateException("Not enough stock for product: " + product.getName());
+            }
+            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
+            productRepository.save(product);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(cartItem.getQuantity())
+                    .price(cartItem.getPrice())
+                    .build();
+            order.getItems().add(orderItem);
+        }
+
+        order = orderRepository.save(order);
+
+        // Clear the cart
+        cart.getItems().clear();
+        cart.setGrandTotal(BigDecimal.ZERO);
+        orderRepository.save(cart);
+
+        return toResponse(order);
+    }
+
     @Transactional(readOnly = true)
     public int getCartCount(Long userId) {
         return orderRepository.findByUserIdAndStatus(userId, OrderStatus.CART)

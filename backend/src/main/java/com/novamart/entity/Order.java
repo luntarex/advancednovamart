@@ -39,6 +39,9 @@ public class Order {
     @Column(length = 50)
     private String paymentMethod;
 
+    @Column(length = 255)
+    private String stripeSessionId;
+
     private LocalDateTime orderDate;
 
     @Builder.Default

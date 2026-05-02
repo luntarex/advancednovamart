@@ -62,7 +62,7 @@
 
         @if (securityPrompts().length > 0) {
           <section class="sample-prompts security-scenarios">
-            <h4>Güvenlik senaryoları:</h4>
+            <h4>Guvenlik senaryolari:</h4>
             <div class="prompt-list">
               @for (prompt of securityPrompts(); track prompt) {
                 <button type="button" (click)="sendPrompt(prompt)" [disabled]="isSending()">{{ prompt }}</button>
