@@ -13,4 +13,20 @@ import { ChatWindow } from './features/chatbot/chat-window/chat-window';
 })
 export class App {
   protected readonly title = signal('frontend');
+
+  constructor() {
+    this.applyDarkMode();
+  }
+
+  private applyDarkMode(): void {
+    const raw = localStorage.getItem('profilePreferences');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.darkMode) {
+          document.documentElement.classList.add('dark-theme');
+        }
+      } catch (e) {}
+    }
+  }
 }

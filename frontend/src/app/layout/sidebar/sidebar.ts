@@ -31,7 +31,7 @@ export class Sidebar {
 
   readonly individualLinks: SidebarLink[] = [
     { label: 'My Dashboard', path: '/dashboard/individual' },
-    { label: 'Chat Support', path: '/chatbot' },
+    { label: 'Support', path: '/chatbot' },
   ];
 
   readonly corporateLinks: SidebarLink[] = [

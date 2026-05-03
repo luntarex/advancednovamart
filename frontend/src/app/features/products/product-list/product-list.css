@@ -82,11 +82,31 @@
 }
 
 .success-banner {
-  padding: 0.65rem 0.8rem;
-  border-radius: 10px;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
   border: 1px solid rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(209, 250, 229, 0.95);
+  backdrop-filter: blur(8px);
   color: #065f46;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .status {
@@ -218,32 +238,115 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
-.card-actions button {
+.cart-action-group {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.qty-selector {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  height: 36px;
+}
+
+.qty-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  width: 28px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background-color: var(--border-light);
+}
+
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-val {
+  min-width: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.add-to-cart-btn {
   flex-grow: 1;
   border: none;
   background: var(--primary-action);
   color: var(--text-on-action);
   border-radius: 999px;
-  padding: 0.6rem 0.65rem;
+  padding: 0 0.65rem;
+  height: 36px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-.card-actions button:hover:not(:disabled) {
+.add-to-cart-btn:hover:not(:disabled) {
   filter: brightness(0.95);
   transform: translateY(-1px);
 }
 
-.card-actions button:focus-visible {
+.add-to-cart-btn:focus-visible {
   outline: 2px solid var(--primary-action);
   outline-offset: 2px;
 }
 
-.card-actions button:disabled {
+.add-to-cart-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.pagination-controls .ghost-btn {
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pagination-controls .ghost-btn:hover:not(:disabled) {
+  background-color: var(--surface);
+  color: var(--primary-action);
+  border-color: var(--primary-action);
+}
+
+.pagination-controls .ghost-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 @media (max-width: 800px) {

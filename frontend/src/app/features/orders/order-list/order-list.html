@@ -44,6 +44,7 @@
       <table>
         <thead>
           <tr>
+            <th>Products</th>
             <th>Order #</th>
             <th>Date</th>
             <th>Status</th>
@@ -55,6 +56,9 @@
         <tbody>
           @for (order of filteredOrders(); track trackById($index, order)) {
             <tr>
+              <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="getOrderSummary(order)">
+                <strong>{{ getOrderSummary(order) }}</strong>
+              </td>
               <td>#{{ order.id }}</td>
               <td>{{ order.orderDate | date:'mediumDate' }}</td>
               <td><span class="status-pill status-{{ order.status.toLowerCase() }}">{{ order.status }}</span></td>

@@ -116,6 +116,17 @@ export class OrderList {
     return order.id;
   }
 
+  getOrderSummary(order: Order): string {
+    if (!order.items || order.items.length === 0) {
+      return 'No items';
+    }
+    const firstItem = order.items[0].productName || `Product #${order.items[0].productId}`;
+    if (order.items.length === 1) {
+      return firstItem;
+    }
+    return `${firstItem} (+${order.items.length - 1} more)`;
+  }
+
   exportFilteredOrdersCsv(): void {
     const rows = [
       ['OrderId', 'Date', 'Status', 'Total', 'PaymentMethod'],

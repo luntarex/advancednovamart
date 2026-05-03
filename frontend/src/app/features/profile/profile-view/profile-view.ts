@@ -43,7 +43,16 @@ export class ProfileView {
 
   savePreferences(): void {
     localStorage.setItem('profilePreferences', JSON.stringify(this.preferences()));
+    
+    // Apply dark mode immediately across the app
+    if (this.preferences().darkMode) {
+      document.documentElement.classList.add('dark-theme');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+    }
+    
     this.successMessage.set('Preferences saved.');
+    setTimeout(() => this.successMessage.set(''), 3000);
   }
 
   updatePreference(key: keyof UserPreferences, value: boolean): void {

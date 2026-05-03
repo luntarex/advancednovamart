@@ -57,7 +57,7 @@
     <p class="status">No products match your filters.</p>
   } @else {
     <div class="product-grid">
-      @for (product of filteredProducts(); track trackById($index, product)) {
+      @for (product of paginatedProducts(); track trackById($index, product)) {
         <article class="product-card" tabindex="0" [routerLink]="['/products', product.id]">
           <img
             class="product-image"
@@ -86,13 +86,32 @@
               <a [routerLink]="['/products', product.id, 'edit']" (click)="$event.stopPropagation()">Edit</a>
             }
             @if (canShop()) {
-              <button type="button" (click)="$event.stopPropagation(); addToCart(product)" [disabled]="product.stockQuantity === 0">
-                Add to cart
-              </button>
+              <div class="cart-action-group" (click)="$event.stopPropagation()">
+                <div class="qty-selector">
+                  <button type="button" class="qty-btn" (click)="updateQuantity(product.id, -1)" [disabled]="getQuantity(product.id) <= 1 || product.stockQuantity === 0">-</button>
+                  <span class="qty-val">{{ getQuantity(product.id) }}</span>
+                  <button type="button" class="qty-btn" (click)="updateQuantity(product.id, 1)" [disabled]="getQuantity(product.id) >= product.stockQuantity || product.stockQuantity === 0">+</button>
+                </div>
+                <button type="button" class="add-to-cart-btn" (click)="addToCart(product)" [disabled]="product.stockQuantity === 0">
+                  Add to cart
+                </button>
+              </div>
             }
           </div>
         </article>
       }
     </div>
+    
+    @if (totalPages() > 1) {
+      <nav class="pagination-controls" aria-label="Product navigation">
+        <button type="button" (click)="prevPage()" [disabled]="currentPage() === 1" class="ghost-btn">
+          Previous
+        </button>
+        <span class="page-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+        <button type="button" (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="ghost-btn">
+          Next
+        </button>
+      </nav>
+    }
   }
 </section>

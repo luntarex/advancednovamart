@@ -97,6 +97,16 @@ export class ProductList {
     return data;
   });
 
+  readonly currentPage = signal(1);
+  readonly pageSize = 48;
+
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredProducts().length / this.pageSize)));
+
+  readonly paginatedProducts = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.filteredProducts().slice(start, start + this.pageSize);
+  });
+
   readonly role = computed(() => this.auth.getUserRole());
   readonly canManageProducts = computed(() => {
     const role = this.role();
@@ -123,9 +133,26 @@ export class ProductList {
       } else {
         this.selectedCategory.set('ALL');
       }
+
+      // Reset to page 1 whenever filters change
+      this.currentPage.set(1);
     });
 
     this.loadProducts();
+  }
+
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   loadProducts(): void {
@@ -185,14 +212,36 @@ export class ProductList {
     return product.id;
   }
 
+  readonly selectedQuantities = signal<Record<number, number>>({});
+
+  getQuantity(productId: number): number {
+    return this.selectedQuantities()[productId] || 1;
+  }
+
+  updateQuantity(productId: number, delta: number): void {
+    const current = this.getQuantity(productId);
+    const newVal = Math.max(1, current + delta);
+    this.selectedQuantities.update(q => ({ ...q, [productId]: newVal }));
+  }
+
   addToCart(product: Product): void {
     if (product.stockQuantity === 0 || !this.canShop()) {
       return;
     }
 
-    this.cartService.addItem(product.id, 1).subscribe({
-      next: () => this.successMessage.set(`${product.name} added to cart.`),
-      error: () => this.successMessage.set('Could not add product to cart.'),
+    const qty = this.getQuantity(product.id);
+    const finalQty = Math.min(qty, product.stockQuantity);
+
+    this.cartService.addItem(product.id, finalQty).subscribe({
+      next: () => {
+        this.successMessage.set(`${finalQty}x ${product.name} added to cart.`);
+        setTimeout(() => this.successMessage.set(''), 3000);
+        this.selectedQuantities.update(q => ({ ...q, [product.id]: 1 }));
+      },
+      error: () => {
+        this.successMessage.set('Could not add product to cart.');
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
     });
   }
 

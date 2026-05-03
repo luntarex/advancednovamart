@@ -27,6 +27,17 @@
   --radius-phi: calc(0.618 * 1rem); /* 0.618 based curve */
 }
 
+:root.dark-theme {
+  --bg-primary: #111827;     /* Gray 900 */
+  --bg-secondary: #1F2937;   /* Gray 800 */
+  --surface: #374151;        /* Gray 700 */
+  
+  --primary-action: #6366F1; /* Indigo 500 */
+  --text-main: #F9FAFB;      /* Gray 50 */
+  --text-muted: #9CA3AF;     /* Gray 400 */
+  --border-light: #4B5563;   /* Gray 600 */
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -39,6 +50,7 @@ body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
   line-height: var(--phi); /* Golden ratio line height */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {

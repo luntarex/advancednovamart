@@ -1,0 +1,21 @@
+LLM_PROVIDER=ollama
+GOOGLE_API_KEY=AIzaSyCfBUth1uNAdmp4sMGuZI445LtGnCAHGWo
+LLM_MODEL=qwen2.5:7b
+GUARDRAIL_MODEL=qwen2.5:7b
+SQL_MODEL=qwen2.5:7b
+ERROR_MODEL=qwen2.5:7b
+ANALYSIS_MODEL=qwen2.5:7b
+LLM_ENABLE_FALLBACK=true
+LLM_FALLBACK_PROVIDER=gemini
+LLM_FALLBACK_MODEL=gemini-2.0-flash
+OLLAMA_BASE_URL=http://localhost:11434
+
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=novamart
+
+# Local LLM defaults: Ollama first, Gemini fallback
+OLLAMA_MODEL=qwen2.5:7b

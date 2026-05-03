@@ -267,6 +267,8 @@
 
 .sample-prompts .prompt-list {
   padding: 0 0.65rem 0.65rem;
+  max-height: 140px;
+  overflow-y: auto;
 }
 
 .security-scenarios {
@@ -280,7 +282,7 @@
 
 .messages {
   flex: 1;
-  min-height: 260px;
+  min-height: 0;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   padding: 0.6rem;
@@ -303,6 +305,7 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  line-height: 1.5;
 }
 
 .message small {
@@ -459,11 +462,15 @@
   resize: vertical;
   min-height: 64px;
   max-height: 120px;
+  overflow-y: auto;
   border: 1px solid var(--border-light);
   border-radius: 10px;
   background: var(--bg-primary);
   color: var(--text-main);
   padding: 0.6rem 0.7rem;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .composer textarea:focus {
