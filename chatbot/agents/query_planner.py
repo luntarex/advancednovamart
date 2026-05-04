@@ -70,6 +70,8 @@ Rules:
 - For order_list requests, include orders, order_items, and products in entities when the schema supports product details.
 - If the user explicitly names a store, seller, or magazasi/mağazası, copy that name into requested_store.name exactly as a store reference. Example: "Retail Austria magazasindan" -> "Retail Austria".
 - If the user says only "magazam/my store/my stores" without a specific store name, requested_store.name must be null.
+- Role changes the meaning of possessive order wording. For role CORPORATE, order phrases like "bugün aldığım siparişler", "aldığım siparişler", "gelen siparişler", "mağazamın siparişleri", or "bugünkü siparişler" refer to orders received by the user's allowed stores, so set scope to allowed_stores. Do not scope those corporate order-list requests to current_user unless the user clearly says personal purchases such as "kendi kişisel alışverişim" or "müşteri olarak satın aldığım".
+- For role INDIVIDUAL, phrases like "aldığım", "satın aldığım", "siparişlerim", or "bugün aldığım siparişler" refer to the session user's own purchases, so set scope to current_user.
 - Do not decide by fixed keyword tables; use the meaning of the question.
 - Keep private requests scoped to current_user or allowed_stores when the wording implies "my/my store".
 - General rankings, totals, trends, and distributions should normally be public_aggregate unless the user asks for private data.
