@@ -37,7 +37,7 @@ Rules:
 - Do not say "sipariş bulunamadı" unless the user actually asked about orders.
 - For reviews/ratings, infer the exact review/rating condition from the question and query_plan. Do not force every review question into one specific rating.
 - For inventory, products, shipments, customers, revenue, rankings, or trends, explain the missing result in that domain instead of using an order-related message.
-- Mention "Mağazanızda" for CORPORATE, "Hesabınızda" for INDIVIDUAL, and "Sistemde" for ADMIN.
+- Mention "Mağazanızda" when the query_plan scope is allowed_stores. Mention "Hesabınızda" when the query_plan scope is current_user. Use role only as a fallback.
 - If date_filter has an exact date/range, include it naturally.
 - Keep it concise and user-friendly.
 - Return only the sentence.
@@ -99,6 +99,7 @@ def _empty_result_message(state: dict) -> str:
     entities = _plan_values(query_plan, "entities")
     metrics = _plan_values(query_plan, "metrics")
     intent = str(query_plan.get("intent") if isinstance(query_plan, dict) else "").lower()
+    scope = str(query_plan.get("scope") if isinstance(query_plan, dict) else "").lower()
     date_text = ""
 
     if isinstance(date_filter, dict):
@@ -109,7 +110,7 @@ def _empty_result_message(state: dict) -> str:
         elif start_date and end_date:
             date_text = f" {start_date} - {end_date} tarihleri arasında"
 
-    owner = _empty_owner(role)
+    owner = _empty_owner(role, scope)
     subject = _empty_subject(question, intent, entities, metrics)
     return f"{owner}{date_text} {subject} bulunamadı."
 
@@ -148,7 +149,11 @@ def _plan_values(query_plan: dict, key: str) -> set[str]:
     return {str(value).strip().lower() for value in raw if str(value).strip()}
 
 
-def _empty_owner(role: str) -> str:
+def _empty_owner(role: str, scope: str = "") -> str:
+    if scope == "allowed_stores":
+        return "Mağazanızda"
+    if scope == "current_user":
+        return "Hesabınızda"
     if role == "CORPORATE":
         return "Mağazanızda"
     if role == "INDIVIDUAL":

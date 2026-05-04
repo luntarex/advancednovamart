@@ -40,6 +40,7 @@ ACCESS RULES:
 2. Private individual data must be scoped to the session user: use o.user_id = {user_id} or equivalent only when the plan scope is current_user.
 3. Private corporate/store data must be scoped to allowed_store_ids only when the plan scope is allowed_stores. Never expose another single store's private details.
 4. General rankings, totals, trends, and distributions should stay public aggregate unless the plan explicitly requests private user/store data.
+5. For role CORPORATE and order_list scope allowed_stores, interpret "aldığım/gelen/mağazamın siparişleri" as store-received orders. Filter by allowed store ids, not by o.user_id.
 
 MANDATORY SQL SAFETY RULES:
 1. Output a single SELECT statement only.
