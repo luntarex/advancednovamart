@@ -8,11 +8,10 @@ import re
 import json
 from typing import Any
 from llm_provider import get_chat_model
-from security import sanitize_text
 
 ANALYSIS_MODEL = os.getenv(
     "ANALYSIS_MODEL",
-    os.getenv("OPENAI_ANALYSIS_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+    os.getenv("OPENAI_ANALYSIS_MODEL", os.getenv("LLM_MODEL", "gpt-4o-mini")),
 )
 _llm: Any = None
 
@@ -48,10 +47,7 @@ Instructions:
 
 
 def analysis_agent(state: dict) -> dict:
-    response_mode = _response_mode(state.get("question", ""), state.get("sql_query", ""))
-    deterministic_answer = _deterministic_answer(response_mode, state.get("query_result", ""))
-    if deterministic_answer:
-        return {"final_answer": sanitize_text(deterministic_answer)}
+    response_mode = _response_mode_from_plan(state.get("query_plan", {}))
 
     response = _get_llm().invoke(
         ANALYSIS_PROMPT.format(
@@ -62,8 +58,27 @@ def analysis_agent(state: dict) -> dict:
         )
     )
     cleaned_answer = _clean_answer_format((response.content or "").strip(), response_mode=response_mode)
-    safe_answer = sanitize_text(cleaned_answer)
-    return {"final_answer": safe_answer}
+    return {"final_answer": cleaned_answer}
+
+
+def _response_mode_from_plan(query_plan: Any) -> str:
+    if not isinstance(query_plan, dict):
+        return "general"
+
+    granularity = str(query_plan.get("result_granularity") or "").strip().lower()
+    intent = str(query_plan.get("intent") or "").strip().lower()
+    entities = {str(entity).strip().lower() for entity in query_plan.get("entities", []) or []}
+    metrics = {str(metric).strip().lower() for metric in query_plan.get("metrics", []) or []}
+
+    if intent == "order_list" or (granularity == "list" and "orders" in entities):
+        return "order_list"
+    if granularity == "ranking" and ({"products", "stores"} & entities):
+        return "product_seller_ranking"
+    if "shipments" in entities and (granularity in {"distribution", "ranking"} or "delay_rate" in metrics):
+        return "shipment_distribution"
+    if granularity in {"list", "ranking", "distribution"}:
+        return "generic_list"
+    return "general"
 
 
 def _clean_answer_format(answer: str, response_mode: str = "general") -> str:

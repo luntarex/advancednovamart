@@ -1,7 +1,7 @@
 """
 Shared state schema for the LangGraph workflow.
 """
-from typing import TypedDict
+from typing import Any, TypedDict
 
 
 class AgentState(TypedDict):
@@ -16,6 +16,7 @@ class AgentState(TypedDict):
     role: str
     active_store_id: int | None
     allowed_store_ids: list[int]
+    current_date: str
 
     # Guardrails
     is_in_scope: bool
@@ -24,6 +25,7 @@ class AgentState(TypedDict):
     is_security_violation: bool
 
     # SQL generation/execution
+    query_plan: dict[str, Any]
     sql_query: str
     query_result: str
     error: str

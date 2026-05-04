@@ -33,20 +33,28 @@ public class ProductController {
 
     @PostMapping
     @PreAuthorize("hasRole('CORPORATE')")
-    public ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
-        return ResponseEntity.ok(productService.create(request));
+    public ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request,
+                                                  Authentication authentication) {
+        return ResponseEntity.ok(productService.create(request, getUserId(authentication)));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('CORPORATE')")
-    public ResponseEntity<ProductResponse> update(@PathVariable Long id, @Valid @RequestBody CreateProductRequest request) {
-        return ResponseEntity.ok(productService.update(id, request));
+    @PreAuthorize("hasAnyRole('CORPORATE', 'ADMIN')")
+    public ResponseEntity<ProductResponse> update(@PathVariable Long id,
+                                                  @Valid @RequestBody CreateProductRequest request,
+                                                  Authentication authentication) {
+        return ResponseEntity.ok(productService.update(
+                id,
+                request,
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('CORPORATE', 'ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        productService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        productService.delete(id, getUserId(authentication), hasRole(authentication, "ROLE_ADMIN"));
         return ResponseEntity.noContent().build();
     }
 

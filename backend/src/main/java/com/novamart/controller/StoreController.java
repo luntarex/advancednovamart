@@ -22,27 +22,41 @@ public class StoreController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
-    public ResponseEntity<List<StoreResponse>> getAll() {
-        return ResponseEntity.ok(storeService.getAll());
+    public ResponseEntity<List<StoreResponse>> getAll(Authentication authentication) {
+        return ResponseEntity.ok(storeService.getAll(
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StoreResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(storeService.getById(id));
+    public ResponseEntity<StoreResponse> getById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(storeService.getById(
+                id,
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('CORPORATE')")
     public ResponseEntity<StoreResponse> create(@Valid @RequestBody CreateStoreRequest request,
                                                  Authentication authentication) {
-        Long ownerId = (Long) authentication.getPrincipal();
+        Long ownerId = getUserId(authentication);
         return ResponseEntity.ok(storeService.create(request, ownerId));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'CORPORATE')")
-    public ResponseEntity<StoreResponse> update(@PathVariable Long id, @RequestBody Map<String, Object> data) {
-        return ResponseEntity.ok(storeService.update(id, data));
+    public ResponseEntity<StoreResponse> update(@PathVariable Long id,
+                                                @RequestBody Map<String, Object> data,
+                                                Authentication authentication) {
+        return ResponseEntity.ok(storeService.update(
+                id,
+                data,
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @DeleteMapping("/{id}")
@@ -50,5 +64,21 @@ public class StoreController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         storeService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long getUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long userId) {
+            return userId;
+        }
+        if (principal instanceof String principalText) {
+            return Long.parseLong(principalText);
+        }
+        throw new IllegalStateException("Unsupported authentication principal type");
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> role.equals(authority.getAuthority()));
     }
 }

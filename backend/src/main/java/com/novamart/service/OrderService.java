@@ -12,6 +12,7 @@ import com.novamart.repository.ProductRepository;
 import com.novamart.repository.StoreRepository;
 import com.novamart.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,9 +56,12 @@ public class OrderService {
                 .toList();
     }
 
-    public OrderResponse getById(Long id) {
+    public OrderResponse getById(Long id, Long requesterUserId, boolean isAdmin) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", id));
+        if (!isAdmin && !canAccessOrder(order, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this order");
+        }
         return toResponse(order);
     }
 
@@ -310,6 +314,21 @@ public class OrderService {
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setGrandTotal(total);
+    }
+
+    private boolean canAccessOrder(Order order, Long requesterUserId) {
+        if (requesterUserId == null) {
+            return false;
+        }
+        if (order.getUser() != null && requesterUserId.equals(order.getUser().getId())) {
+            return true;
+        }
+        if (order.getStore() == null || order.getStore().getId() == null) {
+            return false;
+        }
+        return storeRepository.findByOwnerId(requesterUserId).stream()
+                .map(Store::getId)
+                .anyMatch(order.getStore().getId()::equals);
     }
 
     private OrderResponse emptyCartResponse(Long userId) {

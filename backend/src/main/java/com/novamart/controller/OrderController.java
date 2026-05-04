@@ -29,8 +29,9 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getById(id));
+    public ResponseEntity<OrderResponse> getById(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserId(authentication);
+        return ResponseEntity.ok(orderService.getById(id, userId, hasRole(authentication, "ROLE_ADMIN")));
     }
 
     @PostMapping
@@ -89,6 +90,7 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> update(@PathVariable Long id, @RequestBody Map<String, Object> data) {
         return ResponseEntity.ok(orderService.update(id, data));
     }

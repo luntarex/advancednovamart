@@ -9,6 +9,7 @@ import com.novamart.repository.CategoryRepository;
 import com.novamart.repository.ProductRepository;
 import com.novamart.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,7 +45,8 @@ public class ProductService {
         return toResponse(product);
     }
 
-    public ProductResponse create(CreateProductRequest request) {
+    public ProductResponse create(CreateProductRequest request, Long requesterUserId) {
+        Store store = resolveOwnedStore(request.getStoreId(), requesterUserId);
         Product product = Product.builder()
                 .name(request.getName())
                 .sku(request.getSku())
@@ -52,22 +54,23 @@ public class ProductService {
                 .imageUrl(request.getImageUrl())
                 .unitPrice(request.getUnitPrice())
                 .stockQuantity(request.getStockQuantity())
+                .store(store)
                 .build();
 
         if (request.getCategoryId() != null) {
             product.setCategory(categoryRepository.findById(request.getCategoryId()).orElse(null));
-        }
-        if (request.getStoreId() != null) {
-            product.setStore(storeRepository.findById(request.getStoreId()).orElse(null));
         }
 
         product = productRepository.save(product);
         return toResponse(product);
     }
 
-    public ProductResponse update(Long id, CreateProductRequest request) {
+    public ProductResponse update(Long id, CreateProductRequest request, Long requesterUserId, boolean isAdmin) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (!isAdmin && !ownsProductStore(product, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this product");
+        }
 
         product.setName(request.getName());
         product.setSku(request.getSku());
@@ -75,16 +78,51 @@ public class ProductService {
         product.setImageUrl(request.getImageUrl());
         product.setUnitPrice(request.getUnitPrice());
         product.setStockQuantity(request.getStockQuantity());
+        if (request.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findById(request.getCategoryId()).orElse(null));
+        }
+        if (request.getStoreId() != null) {
+            Store targetStore = isAdmin
+                    ? storeRepository.findById(request.getStoreId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Store", request.getStoreId()))
+                    : resolveOwnedStore(request.getStoreId(), requesterUserId);
+            product.setStore(targetStore);
+        }
 
         product = productRepository.save(product);
         return toResponse(product);
     }
 
-    public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Product", id);
+    public void delete(Long id, Long requesterUserId, boolean isAdmin) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (!isAdmin && !ownsProductStore(product, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this product");
         }
-        productRepository.deleteById(id);
+        productRepository.delete(product);
+    }
+
+    private Store resolveOwnedStore(Long storeId, Long requesterUserId) {
+        if (storeId == null) {
+            List<Store> ownedStores = requesterUserId == null ? List.of() : storeRepository.findByOwnerId(requesterUserId);
+            if (ownedStores.size() == 1) {
+                return ownedStores.get(0);
+            }
+            throw new AccessDeniedException("Products must be assigned to a store you own");
+        }
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store", storeId));
+        if (store.getOwner() == null || requesterUserId == null || !requesterUserId.equals(store.getOwner().getId())) {
+            throw new AccessDeniedException("You do not have access to this store");
+        }
+        return store;
+    }
+
+    private boolean ownsProductStore(Product product, Long requesterUserId) {
+        return product.getStore() != null
+                && product.getStore().getOwner() != null
+                && requesterUserId != null
+                && requesterUserId.equals(product.getStore().getOwner().getId());
     }
 
     private ProductResponse toResponse(Product product) {

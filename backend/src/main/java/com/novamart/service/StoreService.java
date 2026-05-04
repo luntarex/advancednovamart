@@ -9,6 +9,7 @@ import com.novamart.exception.ResourceNotFoundException;
 import com.novamart.repository.StoreRepository;
 import com.novamart.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,13 +22,19 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
 
-    public List<StoreResponse> getAll() {
-        return storeRepository.findAll().stream().map(this::toResponse).toList();
+    public List<StoreResponse> getAll(Long requesterUserId, boolean isAdmin) {
+        List<Store> stores = isAdmin
+                ? storeRepository.findAll()
+                : storeRepository.findByOwnerId(requesterUserId);
+        return stores.stream().map(this::toResponse).toList();
     }
 
-    public StoreResponse getById(Long id) {
+    public StoreResponse getById(Long id, Long requesterUserId, boolean isAdmin) {
         Store store = storeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Store", id));
+        if (!isAdmin && !ownsStore(store, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this store");
+        }
         return toResponse(store);
     }
 
@@ -49,9 +56,15 @@ public class StoreService {
         return toResponse(store);
     }
 
-    public StoreResponse update(Long id, Map<String, Object> data) {
+    public StoreResponse update(Long id, Map<String, Object> data, Long requesterUserId, boolean isAdmin) {
         Store store = storeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Store", id));
+        if (!isAdmin && !ownsStore(store, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this store");
+        }
+        if (!isAdmin && data.containsKey("status")) {
+            throw new AccessDeniedException("Only admins can change store status");
+        }
 
         if (data.containsKey("name")) {
             store.setName((String) data.get("name"));
@@ -71,6 +84,12 @@ public class StoreService {
             throw new ResourceNotFoundException("Store", id);
         }
         storeRepository.deleteById(id);
+    }
+
+    private boolean ownsStore(Store store, Long requesterUserId) {
+        return store.getOwner() != null
+                && requesterUserId != null
+                && requesterUserId.equals(store.getOwner().getId());
     }
 
     private StoreResponse toResponse(Store store) {

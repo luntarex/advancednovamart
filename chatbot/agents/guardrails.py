@@ -6,6 +6,7 @@ Guardrails agent.
 from __future__ import annotations
 
 import os
+import re
 import unicodedata
 from typing import Any
 
@@ -15,7 +16,7 @@ from security import detect_prompt_attack
 
 GUARDRAIL_MODEL = os.getenv(
     "GUARDRAIL_MODEL",
-    os.getenv("OPENAI_GUARDRAIL_MODEL", os.getenv("LLM_MODEL", "gemini-2.0-flash")),
+    os.getenv("OPENAI_GUARDRAIL_MODEL", os.getenv("LLM_MODEL", "gpt-4o-mini")),
 )
 _llm: Any = None
 
@@ -72,11 +73,16 @@ def _cheap_rule_classify(question: str) -> str | None:
     q = _normalize_text(question or "")
     if not q:
         return "out_of_scope"
-    if any(token in q for token in GREETINGS) and len(q.split()) <= 8:
+    if any(_contains_phrase(q, token) for token in GREETINGS) and len(q.split()) <= 8:
         return "greeting"
     if any(token in q for token in DOMAIN_HINTS):
         return "in_scope"
     return None
+
+
+def _contains_phrase(text: str, phrase: str) -> bool:
+    escaped = re.escape(phrase.strip().lower())
+    return bool(re.search(rf"(?<!\w){escaped}(?!\w)", text))
 
 
 def _get_llm() -> Any:

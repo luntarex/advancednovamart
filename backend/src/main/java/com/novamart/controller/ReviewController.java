@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,13 +34,16 @@ public class ReviewController {
     @PostMapping
     public ResponseEntity<ReviewResponse> create(@Valid @RequestBody CreateReviewRequest request,
                                                    Authentication authentication) {
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId = getUserId(authentication);
         return ResponseEntity.ok(reviewService.create(request, userId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ReviewResponse> update(@PathVariable Long id, @RequestBody Map<String, Object> data) {
-        return ResponseEntity.ok(reviewService.update(id, data));
+    public ResponseEntity<ReviewResponse> update(@PathVariable Long id,
+                                                 @RequestBody Map<String, Object> data,
+                                                 Authentication authentication) {
+        Long userId = getUserId(authentication);
+        return ResponseEntity.ok(reviewService.update(id, data, userId, hasRole(authentication, "ROLE_ADMIN")));
     }
 
     @DeleteMapping("/{id}")
@@ -47,5 +51,22 @@ public class ReviewController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         reviewService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role::equals);
+    }
+
+    private Long getUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long userId) {
+            return userId;
+        }
+        if (principal instanceof String principalText) {
+            return Long.parseLong(principalText);
+        }
+        throw new IllegalStateException("Unsupported authentication principal type");
     }
 }

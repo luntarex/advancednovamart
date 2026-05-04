@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,8 +28,12 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getById(id));
+    public ResponseEntity<UserResponse> getById(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(userService.getById(
+                id,
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @PostMapping
@@ -37,8 +43,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody Map<String, Object> data) {
-        return ResponseEntity.ok(userService.update(id, data));
+    public ResponseEntity<UserResponse> update(@PathVariable Long id,
+                                               @RequestBody Map<String, Object> data,
+                                               Authentication authentication) {
+        return ResponseEntity.ok(userService.update(
+                id,
+                data,
+                getUserId(authentication),
+                hasRole(authentication, "ROLE_ADMIN")
+        ));
     }
 
     @DeleteMapping("/{id}")
@@ -46,5 +59,22 @@ public class UserController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long getUserId(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long userId) {
+            return userId;
+        }
+        if (principal instanceof String principalText) {
+            return Long.parseLong(principalText);
+        }
+        throw new IllegalStateException("Unsupported authentication principal type");
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role::equals);
     }
 }
