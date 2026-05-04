@@ -8,7 +8,9 @@ import com.novamart.enums.ShipmentStatus;
 import com.novamart.exception.ResourceNotFoundException;
 import com.novamart.repository.OrderRepository;
 import com.novamart.repository.ShipmentRepository;
+import com.novamart.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,21 +24,31 @@ public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final OrderRepository orderRepository;
+    private final StoreRepository storeRepository;
 
-    public List<ShipmentResponse> getAll() {
-        return shipmentRepository.findAll().stream().map(this::toResponse).toList();
+    public List<ShipmentResponse> getAll(Long requesterUserId, boolean isAdmin) {
+        return shipmentRepository.findAll().stream()
+                .filter(shipment -> isAdmin || canAccessShipment(shipment, requesterUserId))
+                .map(this::toResponse)
+                .toList();
     }
 
-    public ShipmentResponse getById(Long id) {
+    public ShipmentResponse getById(Long id, Long requesterUserId, boolean isAdmin) {
         Shipment shipment = shipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Shipment", id));
+        if (!isAdmin && !canAccessShipment(shipment, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this shipment");
+        }
         return toResponse(shipment);
     }
 
-    public ShipmentResponse create(Map<String, Object> data) {
+    public ShipmentResponse create(Map<String, Object> data, Long requesterUserId, boolean isAdmin) {
         Long orderId = Long.valueOf(data.get("orderId").toString());
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (!isAdmin && !ownsOrderStore(order, requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this order");
+        }
 
         Shipment shipment = Shipment.builder()
                 .order(order)
@@ -51,9 +63,12 @@ public class ShipmentService {
         return toResponse(shipment);
     }
 
-    public ShipmentResponse update(Long id, Map<String, Object> data) {
+    public ShipmentResponse update(Long id, Map<String, Object> data, Long requesterUserId, boolean isAdmin) {
         Shipment shipment = shipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Shipment", id));
+        if (!isAdmin && !ownsOrderStore(shipment.getOrder(), requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this shipment");
+        }
 
         if (data.containsKey("status")) {
             try {
@@ -79,6 +94,26 @@ public class ShipmentService {
             throw new ResourceNotFoundException("Shipment", id);
         }
         shipmentRepository.deleteById(id);
+    }
+
+    private boolean canAccessShipment(Shipment shipment, Long requesterUserId) {
+        if (requesterUserId == null || shipment.getOrder() == null) {
+            return false;
+        }
+        Order order = shipment.getOrder();
+        if (order.getUser() != null && requesterUserId.equals(order.getUser().getId())) {
+            return true;
+        }
+        return ownsOrderStore(order, requesterUserId);
+    }
+
+    private boolean ownsOrderStore(Order order, Long requesterUserId) {
+        if (requesterUserId == null || order == null || order.getStore() == null || order.getStore().getId() == null) {
+            return false;
+        }
+        Long storeId = order.getStore().getId();
+        return storeRepository.findByOwnerId(requesterUserId).stream()
+                .anyMatch(store -> storeId.equals(store.getId()));
     }
 
     private ShipmentResponse toResponse(Shipment shipment) {

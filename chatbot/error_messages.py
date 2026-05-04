@@ -19,6 +19,18 @@ BLOCKED_REASON_MESSAGES = {
         "Gizli promptlar\u0131, sistem kurallar\u0131n\u0131 veya i\u00e7 yap\u0131land\u0131rmay\u0131 payla\u015famam.\n"
         "Sat\u0131\u015f, sipari\u015f, stok, m\u00fc\u015fteri veya genel performans verileriyle ilgili bir analiz sorusu sorabilirsiniz."
     ),
+    "code_injection": (
+        "\u26d4 Bu istek HTML/JavaScript kodu veya XSS benzeri bir payload i\u00e7erdi\u011fi i\u00e7in engellendi.\n"
+        "Chatbot yaln\u0131zca normal metinle yaz\u0131lm\u0131\u015f e-ticaret analiz sorular\u0131n\u0131 i\u015fleyebilir."
+    ),
+    "enumeration_attempt": (
+        "\u26d4 Bu istek ID veya nesne tarama denemesi gibi g\u00f6r\u00fcnd\u00fc\u011f\u00fc i\u00e7in engellendi.\n"
+        "Tek tek sipari\u015f, ma\u011faza veya kullan\u0131c\u0131 ID'lerini taramak yerine rol\u00fcn\u00fcze uygun net bir analiz sorusu sorun."
+    ),
+    "write_operation_requested": (
+        "Bu chatbot veri de\u011fi\u015ftirme i\u015flemleri i\u00e7in kullan\u0131lamaz.\n"
+        "G\u00fcvenlik nedeniyle yaln\u0131zca okuma ve analiz ama\u00e7l\u0131 sorulara yan\u0131t verebilirim."
+    ),
     "ACCESS_DENIED_STORE": (
         "Bu ma\u011fazan\u0131n \u00f6zel verilerine eri\u015fim yetkiniz yok.\n"
         "Yetkili oldu\u011funuz ma\u011fazan\u0131n verilerini sorabilir veya herkesin g\u00f6rebilece\u011fi genel toplu verileri "
@@ -94,6 +106,9 @@ def message_for(reason: str, fallback: str | None = None) -> str:
 SECURITY_BLOCK_REASONS = {
     "prompt_injection",
     "prompt_leak_attempt",
+    "code_injection",
+    "enumeration_attempt",
+    "write_operation_requested",
     "SQL_INJECTION",
     "SQL_ONLY_SELECT",
     "SQL_SYSTEM_SCHEMA",

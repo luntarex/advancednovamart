@@ -5,7 +5,10 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict, deque
+from datetime import datetime
+import os
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -53,6 +56,22 @@ RATE_LIMIT_MAX_REQUESTS = 30
 _request_buckets: dict[str, deque[float]] = defaultdict(deque)
 
 
+def _current_date_iso() -> str:
+    timezone = os.getenv("CHATBOT_TIMEZONE", "Europe/Istanbul")
+    try:
+        return datetime.now(ZoneInfo(timezone)).date().isoformat()
+    except Exception:
+        return datetime.now().date().isoformat()
+
+
+def _is_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _should_expose_sql(role: str) -> bool:
+    return role.upper() == "ADMIN" and _is_truthy(os.getenv("CHATBOT_EXPOSE_SQL", "false"))
+
+
 def _rate_limit_key(req: ChatRequest) -> str:
     if req.session_id:
         return f"session:{req.session_id}"
@@ -90,6 +109,8 @@ async def ask(request: ChatRequest):
         "role": request.role.upper(),
         "active_store_id": request.active_store_id,
         "allowed_store_ids": allowed_store_ids,
+        "current_date": _current_date_iso(),
+        "query_plan": {},
         "sql_query": "",
         "query_result": "",
         "error": "",
@@ -117,7 +138,7 @@ async def ask(request: ChatRequest):
     return ChatResponse(
         answer=answer,
         visualization_code=result.get("visualization_code", ""),
-        sql_query=result.get("sql_query", ""),
+        sql_query=result.get("sql_query", "") if _should_expose_sql(request.role) else "",
         blocked_reason=result.get("blocked_reason", ""),
     )
 

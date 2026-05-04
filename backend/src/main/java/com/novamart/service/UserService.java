@@ -8,6 +8,7 @@ import com.novamart.exception.BadRequestException;
 import com.novamart.exception.ResourceNotFoundException;
 import com.novamart.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,10 @@ public class UserService {
         return userRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    public UserResponse getById(Long id) {
+    public UserResponse getById(Long id, Long requesterUserId, boolean isAdmin) {
+        if (!isAdmin && !id.equals(requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this user");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
         return toResponse(user);
@@ -54,7 +58,13 @@ public class UserService {
     }
 
     @SuppressWarnings("unchecked")
-    public UserResponse update(Long id, Map<String, Object> data) {
+    public UserResponse update(Long id, Map<String, Object> data, Long requesterUserId, boolean isAdmin) {
+        if (!isAdmin && !id.equals(requesterUserId)) {
+            throw new AccessDeniedException("You do not have access to this user");
+        }
+        if (!isAdmin && data.containsKey("roleType")) {
+            throw new AccessDeniedException("Only admins can change user roles");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
 

@@ -8,9 +8,21 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Locale;
+import java.util.Set;
 
 @Component
 public class JwtTokenProvider {
+
+    private static final int MIN_SECRET_BYTES = 32;
+    private static final Set<String> WEAK_SECRETS = Set.of(
+            "secret",
+            "jwtsecret",
+            "jwt_secret",
+            "changeme",
+            "password",
+            "novamart"
+    );
 
     private final SecretKey key;
     private final long expirationMs;
@@ -18,6 +30,7 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms}") long expirationMs) {
+        validateSecret(secret);
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
@@ -60,5 +73,15 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private void validateSecret(String secret) {
+        String trimmed = secret == null ? "" : secret.trim();
+        if (trimmed.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException("JWT secret must be at least 32 bytes");
+        }
+        if (WEAK_SECRETS.contains(trimmed.toLowerCase(Locale.ROOT))) {
+            throw new IllegalStateException("JWT secret must not use a default or weak value");
+        }
     }
 }

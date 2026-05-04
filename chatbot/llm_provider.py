@@ -5,8 +5,8 @@ Supports:
 - openai
 - ollama
 
-Default order is Ollama first, Gemini fallback. This keeps local chat fast and
-only spends Gemini quota when the local model is unavailable.
+Default order is OpenAI first, Ollama fallback. This keeps responses strong and
+falls back to the local qwen2.5:7b model when OpenAI is unavailable.
 """
 from __future__ import annotations
 
@@ -60,12 +60,12 @@ class FallbackChatModel:
 
 
 def get_chat_model(model: str, temperature: float = 0) -> Any:
-    provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").strip().lower()
     primary_model = _resolve_model_for_provider(provider, requested_model=model)
     primary = _create_chat_model(provider=provider, model=primary_model, temperature=temperature)
 
     fallback_enabled = _is_truthy(os.getenv("LLM_ENABLE_FALLBACK", "true"))
-    fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "gemini").strip().lower()
+    fallback_provider = os.getenv("LLM_FALLBACK_PROVIDER", "ollama").strip().lower()
     if not fallback_enabled or provider == fallback_provider:
         return primary
 

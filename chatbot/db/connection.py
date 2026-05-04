@@ -77,3 +77,35 @@ def get_schema() -> str:
         return "\n\n".join(schema_parts)
     except Exception as exc:  # pragma: no cover
         return f"Error reading schema: {exc}"
+
+
+def find_store_ids_by_name(store_name: str) -> list[int]:
+    """
+    Resolve a user-mentioned store name to store ids.
+    Exact case-insensitive matches are preferred, with a contains fallback for
+    natural-language references such as "Retail Austria magazasi".
+    """
+    name = (store_name or "").strip()
+    if not name:
+        return []
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM stores WHERE LOWER(name) = LOWER(%s)", (name,))
+        exact_ids = [int(row[0]) for row in cursor.fetchall()]
+        if exact_ids:
+            cursor.close()
+            conn.close()
+            return exact_ids
+
+        cursor.execute(
+            "SELECT id FROM stores WHERE LOWER(name) LIKE LOWER(%s) ORDER BY id LIMIT 20",
+            (f"%{name}%",),
+        )
+        fuzzy_ids = [int(row[0]) for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return fuzzy_ids
+    except Exception:
+        return []

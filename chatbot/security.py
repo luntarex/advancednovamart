@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import html
 import re
+import unicodedata
 from typing import Iterable
 
 
@@ -26,6 +27,16 @@ PROMPT_INJECTION_PATTERNS = [
     r"\buser\s+role\s*=\s*admin\b",
     r"\bcontext:\s*system\b",
     r"\braw\s+initialization\s+context\b",
+    r"for\s+testing\s+purposes.*\b(admin|privilege|full\s+access)\b",
+    r"\bassume\s+(that\s+)?i\s+have\s+(admin|administrator|root|full\s+data)\b",
+    r"\bi\s+have\s+been\s+granted\s+full\s+data\s+access\b",
+    r"\bas\s+we\s+(established|agreed|confirmed)\b.*\b(admin|access|permission|authorized)\b",
+    r"\b(cto|ceo|admin)\b.*\b(granted|approved|authorized)\b.*\b(access|permission)\b",
+    r"\brole\s*[:=]\s*(admin|administrator|root|system)\b",
+    r"\bact\s+as\s+(an?\s+)?(admin|administrator|root|system)\b",
+    r"\bpretend\s+(that\s+)?(i\s+am|you\s+are)\s+(an?\s+)?(admin|administrator|root|system)\b",
+    r"\byetkim\s+var\s+varsay\b",
+    r"\bbeni\s+(admin|y\u00f6netici)\s+olarak\s+kabul\s+et\b",
     r"\u00f6nceki\s+talimatlar[ıi]\s+(g\u00f6rmezden\s+gel|unut|yok\s+say)",
     r"sistem\s+talimatlar[ıi]n[ıi]\s+(g\u00f6rmezden\s+gel|unut|yok\s+say)",
     r"kurallar[ıi]\s+(g\u00f6rmezden\s+gel|devre\s+d[ıi]\u015f[ıi]\s+b[ıi]rak|unut|yok\s+say)",
@@ -46,6 +57,12 @@ PROMPT_LEAK_PATTERNS = [
     r"list\s+all\s+column\s+names",
     r"what\s+tables\s+exist",
     r"what\s+is\s+your\s+configuration",
+    r"\b(database|db)\s+schema\b",
+    r"\bschema\s+(structure|details|dump)\b",
+    r"\b(sql\s+dialect|table\s+names|column\s+names)\b",
+    r"\binternal\s+(configuration|config|rules|context|policy)\b",
+    r"\ball\s+(tables|columns|column\s+names|schema)\b",
+    r"\bshow\s+(me\s+)?(the\s+)?(raw\s+sql|generated\s+sql|database\s+schema)\b",
     r"sistem\s+promptunu(?:\s+\w+){0,3}\s+(g\u00f6ster|yaz|payla\u015f|s\u00f6yle)",
     r"gizli\s+(talimatlar[ıi]|kurallar[ıi])(?:\s+\w+){0,3}\s+(g\u00f6ster|yaz|payla\u015f|s\u00f6yle)",
     r"veritaban[ıi]\s+(tablolar[ıi]n[ıi]|kolonlar[ıi]n[ıi])(?:\s+\w+){0,3}\s+(g\u00f6ster|listele|payla\u015f)",
@@ -64,6 +81,47 @@ SQLI_PATTERNS = [
     r"\balter\b",
     r"\btruncate\b",
     r"\bcreate\b",
+    r"\bsleep\s*\(",
+    r"\bbenchmark\s*\(",
+    r"\bload_file\s*\(",
+    r"\binto\s+outfile\b",
+    r"\bversion\s*\(",
+    r"\bdatabase\s*\(",
+    r"\bcurrent_user\s*\(",
+]
+
+CODE_INJECTION_PATTERNS = [
+    r"<\s*script\b",
+    r"<\s*img\b[^>]*(onerror|onload)\s*=",
+    r"<\s*svg\b[^>]*onload\s*=",
+    r"\bon(error|load|mouseover|focus|click)\s*=",
+    r"\bjavascript\s*:",
+    r"\bdocument\s*\.\s*cookie\b",
+    r"\blocalstorage\b",
+    r"\bsessionstorage\b",
+    r"\beval\s*\(",
+    r"\bnew\s+function\s*\(",
+    r"\batob\s*\(",
+    r"\bfetch\s*\(",
+    r"&#x?0*3c;?\s*script",
+]
+
+ENUMERATION_PATTERNS = [
+    r"\b(ids?|store\s+ids?|order\s+ids?|user\s+ids?)\s+\d+\s*(through|to|-)\s*\d+\b",
+    r"\bfor\s+\w+\s+in\s+range\s*\(",
+    r"\brange\s*\(\s*\d+",
+    r"\b(store|order|user)\s+id\s+\d+.*\b(store|order|user)\s+id\s+\d+",
+    r"\bsku[-_\s]*\d+\s*(through|to|-)\s*sku[-_\s]*\d+\b",
+    r"\b\d+\s*(ile|ve)\s+\d+\s+aras[Ä±i]ndaki\s+(id|sipari\u015f|ma\u011faza|kullan[Ä±i]c[Ä±i])",
+]
+
+WRITE_INTENT_PATTERNS = [
+    r"\b(update|insert|delete|drop|alter|truncate|create)\b",
+    r"\b(add|create)\s+(a\s+)?(new\s+)?admin\b",
+    r"\b(set|change|modify|make)\b.*\b(role|is_admin|admin|password|password_hash|cost_price|supplier_margin)\b",
+    r"\b(role\s*=\s*admin|is_admin\s*=\s*true)\b",
+    r"\b(cost_price|supplier_margin|password_hash|refresh_token|api_key)\b",
+    r"\b(g\u00fcncelle|sil|ekle|olu\u015ftur|de\u011fi\u015ftir)\b.*\b(rol|admin|y\u00f6netici|parola|maliyet|k\u00e2r|kar)\b",
 ]
 
 SENSITIVE_COLUMNS = {
@@ -72,6 +130,11 @@ SENSITIVE_COLUMNS = {
     "api_key",
     "secret",
     "refresh_token",
+    "email",
+    "phone",
+    "address_line",
+    "tracking_number",
+    "stripe_session_id",
     "internal_cost",
     "supplier_margin",
     "cost_price",
@@ -95,16 +158,31 @@ PRIVATE_PUBLIC_AGGREGATE_COLUMNS = {
 }
 
 
+def normalize_security_text(text: str) -> str:
+    unescaped = html.unescape(text or "")
+    normalized = unicodedata.normalize("NFKC", unescaped)
+    normalized = re.sub(r"[\u200b-\u200f\u202a-\u202e\u2060\ufeff]", "", normalized)
+    return normalized.lower()
+
+
 def _contains_any(text: str, patterns: Iterable[str]) -> bool:
-    lowered = text.lower()
-    return any(re.search(pattern, lowered) for pattern in patterns)
+    normalized = normalize_security_text(text)
+    return any(re.search(pattern, normalized, flags=re.IGNORECASE | re.DOTALL) for pattern in patterns)
 
 
 def detect_prompt_attack(question: str) -> tuple[bool, str]:
+    if _contains_any(question, CODE_INJECTION_PATTERNS):
+        return True, "code_injection"
     if _contains_any(question, PROMPT_INJECTION_PATTERNS):
         return True, "prompt_injection"
     if _contains_any(question, PROMPT_LEAK_PATTERNS):
         return True, "prompt_leak_attempt"
+    if _contains_any(question, ENUMERATION_PATTERNS):
+        return True, "enumeration_attempt"
+    if _contains_any(question, WRITE_INTENT_PATTERNS):
+        return True, "write_operation_requested"
+    if _contains_any(question, SQLI_PATTERNS):
+        return True, "SQL_INJECTION"
     return False, ""
 
 
